@@ -65,7 +65,7 @@ def llm_call(base64_image:bytes,config,provider:str):
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                max_tokens=2048,
+                max_completion_tokens=2048,
             )
             msg = response.choices[0].message
             if hasattr(msg, "refusal") and msg.refusal:

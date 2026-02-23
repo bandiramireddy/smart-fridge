@@ -1,4 +1,4 @@
-from fastapi_backend import FastAPI
+# from fastapi_backend import FastAPI
 import requests,base64
 
 url=" http://localhost:8000"

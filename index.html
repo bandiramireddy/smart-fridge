@@ -438,8 +438,8 @@ async function sendImage() {
     };
 
     try {
-    //   const response = await fetch('http://localhost:8000/analyze', {https://smart-fridge-nmsx.onrender.com/
-      const response = await fetch('https://smart-fridge-nmsx.onrender.com/analyze', {
+      const response = await fetch('http://localhost:8000/analyze', {
+    //   const response = await fetch('https://smart-fridge-nmsx.onrender.com/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
