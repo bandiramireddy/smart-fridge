@@ -1,0 +1,6 @@
+databricks-sql-connector[pyarrow]
+openai
+python-dotenv
+fastapi
+uvicorn
+pyyaml

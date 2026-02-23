@@ -1,0 +1,17 @@
+[project]
+name = "smart-fridge"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "databricks-sql-connector[pyarrow]>=4.2.5",
+    "dotenv>=0.9.9",
+    "fastapi>=0.131.0",
+    "openai>=2.21.0",
+    "pillow>=12.1.1",
+    "python-dotenv>=1.2.1",
+    "pyyaml>=6.0.3",
+    "requests>=2.32.5",
+    "uvicorn>=0.41.0",
+]

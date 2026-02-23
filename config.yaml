@@ -1,0 +1,50 @@
+llm_model:
+  openai:
+    name: gpt-4o
+    temperature: 1
+  groq:
+    name: groq-2
+    temperature: 1
+
+prompt_template:
+  system_prompt: |
+    You are a food inventory and quality control system.
+    You output RAW JSON only.
+    Never use markdown, never wrap in ```json or ``` fences.
+    Never add explanation text before or after the JSON.
+    Your entire response must start with { and end with }.
+    Every field in the schema is required.
+
+  analysis_prompt: |
+    Analyze this image and identify all visible food/inventory items.
+    If no items are found, return the structure with an empty inventory array.
+
+    Respond with this exact JSON structure, no other text:
+
+    {
+      "total_items": <number of distinct item types found>,
+      "spoilage_alert_count": <count of items where is_spoiling is true>,
+      "overall_health_score": <float 0-100, average quality across all items>,
+      "inventory": [
+        {
+          "item_name": "<specific name e.g. Banana, Raw Mutton, Orange Juice>",
+          "quantity": <integer>,
+          "unit": "<pcs|kg|grams|liters|packs>",
+          "quality_rating": <float 0.0-10.0>,
+          "is_spoiling": <true or false>,
+          "observations": "<describe color, texture, smell indicators, packaging state, visible defects>",
+          "possible_expiry_days": <integer, estimate days left or null if unknown>,
+          "bbox": [<ymin>, <xmin>, <ymax>, <xmax>]
+        }
+      ],
+      "dashboard_alerts": [
+        "<only include if is_spoiling true or quality_rating below 5.0, else empty array>"
+      ]
+    }
+
+    Rules:
+    - bbox must tightly cover the ENTIRE visible item including partially visible edges
+    - If the item fills most of the frame, bbox should be close to [0, 0, 1000, 1000]
+    - bbox format is [ymin, xmin, ymax, xmax] normalized 0-1000
+    - For items in packaging/bags, the bbox covers the WHOLE bag, not just part of it
+    - Do NOT clip the bbox at the center of the image — extend to edges if item goes to edg

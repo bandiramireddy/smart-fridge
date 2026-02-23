@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Techbreaker Smart Freeze — Image Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f12;
+  --surface: #13161b;
+  --surface2: #1a1e25;
+  --border: #252b35;
+  --pass: #00d97e;
+  --warn: #f59e0b;
+  --fail: #ef4444;
+  --text: #e8edf5;
+  --muted: #5a6478;
+  --accent: #00d97e;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  display: flex; 
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+}
+
+.brand-main {
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.brand-sub {
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.brand-dot { color: var(--accent); }
+
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,217,126,0.1);
+  border: 1px solid rgba(0,217,126,0.2);
+  color: var(--accent);
+  font-size: 11px;
+  padding: 5px 12px; border-radius: 20px;
+  letter-spacing: 1px;
+}
+.pulse { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* SIDEBAR LEFT */
+.sidebar-left {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.field-group { display: flex; flex-direction: column; gap: 12px; }
+
+.field label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field input:focus { border-color: var(--accent); }
+
+.analyze-btn {
+  margin-top: auto;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  text-transform: uppercase;
+}
+.analyze-btn:hover { opacity: 0.9; }
+.analyze-btn:active { transform: scale(0.98); }
+.analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* CENTER */
+.center {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+  overflow: auto;
+}
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(0,217,126,0.04);
+}
+.upload-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width:100%; height:100%;
+}
+.upload-icon { font-size: 36px; margin-bottom: 12px; }
+.upload-text { font-size: 13px; color: var(--muted); }
+.upload-text strong { color: var(--accent); }
+
+/* CANVAS WRAPPER */
+.canvas-wrap {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: none;
+  max-width: 100%;
+  max-height: 600px;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 600px;
+}
+
+/* SIDEBAR RIGHT */
+.sidebar-right {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* SCORE CARD */
+.score-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.score-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+.score-lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+/* ITEM CARD */
+.item-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.item-card:hover { border-color: rgba(255,255,255,0.15); }
+.item-card.highlighted { border-color: var(--accent) !important; }
+
+.item-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.item-name { font-size: 13px; font-weight: 500; }
+.item-badge {
+  font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+.badge-pass { background: rgba(0,217,126,0.15); color: var(--pass); }
+.badge-warn { background: rgba(245,158,11,0.15); color: var(--warn); }
+.badge-fail { background: rgba(239,68,68,0.15); color: var(--fail); }
+
+.item-row {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--muted);
+  margin-bottom: 4px;
+}
+.item-row span:last-child { color: var(--text); }
+
+.quality-bar {
+  height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden;
+}
+.quality-fill { height: 100%; border-radius: 2px; }
+
+/* ALERTS */
+.alert-box {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 11px;
+  color: #fca5a5;
+  display: none;
+}
+.alert-title { font-weight: 600; color: var(--fail); margin-bottom: 6px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* LOADER */
+#loader {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none; justify-content: center; align-items: center;
+  z-index: 999;
+  flex-direction: column; gap: 16px;
+}
+#loader.show { display: flex; }
+.spinner {
+  width: 52px; height: 52px;
+  border: 4px solid rgba(255,255,255,0.1);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+
+/* EMPTY STATE */
+.empty-right {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--muted); font-size: 12px; text-align: center; gap: 8px;
+}
+.empty-icon { font-size: 32px; opacity: 0.3; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar-left, .sidebar-right { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="spinner"></div>
+  <div class="loader-text">Analyzing image...</div>
+</div>
+
+<!-- HEADER -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-main">Techbreaker</div>
+    <div class="brand-sub">Smart<span class="brand-dot"> Freeze</span></div>
+  </div>
+  <div class="status-pill"><div class="pulse"></div> LIVE</div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT SIDEBAR — Config -->
+  <div class="sidebar-left">
+    <div>
+      <div class="sidebar-title">Configuration</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Company ID</label>
+        <input type="text" id="companyId" value="techbreakerllc">
+      </div>
+      <div class="field">
+        <label>Machine ID</label>
+        <input type="text" id="machineId" value="fridge_002">
+      </div>
+      <div class="field">
+        <label>Camera ID</label>
+        <input type="text" id="cameraId" value="cam_001">
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="sendImage()" disabled>
+      ▶ Run Analysis
+    </button>
+  </div>
+
+  <!-- CENTER — Canvas -->
+  <div class="center">
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="imageInput" accept="image/*" onchange="handleFile()">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text"><strong>Click to upload</strong> or drag & drop<br>Supports JPG, PNG, WEBP</div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR — Results -->
+  <div class="sidebar-right" id="sidebarRight">
+    <div class="empty-right" id="emptyRight">
+      <div class="empty-icon">🔍</div>
+      <div>Upload an image and<br>run analysis to see results</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let selectedFile = null;
+let originalImage = new Image();
+let currentItems = [];
+
+// ── Upload & Preview ───────────────────────────────────
+function handleFile() {
+  const file = document.getElementById('imageInput').files[0];
+  if (!file) return;
+  selectedFile = file;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    originalImage = new Image();
+    originalImage.onload = () => {
+      const canvas = document.getElementById('canvas');
+      canvas.width  = originalImage.naturalWidth;
+      canvas.height = originalImage.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(originalImage, 0, 0);
+
+      document.getElementById('uploadZone').style.display = 'none';
+      document.getElementById('canvasWrap').style.display = 'block';
+      document.getElementById('analyzeBtn').disabled = false;
+    };
+    originalImage.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag and drop support
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    document.getElementById('imageInput').files = e.dataTransfer.files;
+    handleFile();
+  }
+});
+
+// ── Send to API ────────────────────────────────────────
+async function sendImage() {
+  if (!selectedFile) return;
+
+  document.getElementById('loader').classList.add('show');
+  document.getElementById('analyzeBtn').disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const base64Image = reader.result.split(',')[1];
+    const payload = {
+      image: base64Image,
+      metadata: { param1: "value1" },
+      company_id: document.getElementById('companyId').value,
+      machine_id: document.getElementById('machineId').value,
+      camera_id: document.getElementById('cameraId').value
+    };
+
+    try {
+      const response = await fetch('http://localhost:8000/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+
+      const outer = await response.json();
+
+      // ── Parse inner LLM JSON ── handle markdown code blocks
+      let inner;
+      try {
+        const rawContent = outer.llm_response?.content || outer.llm_analysis?.content || JSON.stringify(outer);
+        const cleaned = rawContent
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/,      '')
+          .replace(/```\s*$/,      '')
+          .trim();
+        inner = JSON.parse(cleaned);
+      } catch {
+        inner = outer;
+      }
+
+      currentItems = inner.inventory || [];
+
+      drawBoxes(currentItems);
+      renderResults(inner);
+
+    } catch (err) {
+      alert('Error: ' + err.message);
+      console.error(err);
+    }
+
+    document.getElementById('loader').classList.remove('show');
+    document.getElementById('analyzeBtn').disabled = false;
+  };
+
+  reader.readAsDataURL(selectedFile);
+}
+
+// ── Draw Bounding Boxes ────────────────────────
+function drawBoxes(items) {
+  const canvas = document.getElementById('canvas');
+  const ctx    = canvas.getContext('2d');
+
+  ctx.drawImage(originalImage, 0, 0);
+
+  const imgW = canvas.width;
+  const imgH = canvas.height;
+
+  items.forEach((item, idx) => {
+    const bbox = item.bbox;
+    if (!bbox || bbox.length < 4) return;
+
+    const [ymin, xmin, ymax, xmax] = bbox;
+    const x1 = (xmin / 1000) * imgW;
+    const y1 = (ymin / 1000) * imgH;
+    const x2 = (xmax / 1000) * imgW;
+    const y2 = (ymax / 1000) * imgH;
+
+    const w = x2 - x1;
+    const h = y2 - y1;
+
+    const color = item.is_spoiling
+      ? '#ef4444'
+      : item.quality_rating < 5
+        ? '#f59e0b'
+        : '#00d97e';
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 3;
+    ctx.strokeRect(x1, y1, w, h);
+
+    ctx.fillStyle = color + '18';
+    ctx.fillRect(x1, y1, w, h);
+
+    const label     = `${item.item_name}  Q:${item.quality_rating}`;
+    const fontSize  = Math.max(12, Math.min(16, imgW / 50));
+    ctx.font        = `bold ${fontSize}px DM Mono, monospace`;
+    const textW     = ctx.measureText(label).width;
+    const labelH    = fontSize + 8;
+    const labelY    = y1 > labelH + 4 ? y1 - 4 : y1 + h + labelH;
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x1, labelY - labelH, textW + 12, labelH);
+
+    ctx.fillStyle = '#000';
+    ctx.fillText(label, x1 + 6, labelY - 4);
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x1 + 14, y1 + 14, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.font = `bold ${fontSize - 2}px DM Mono, monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(idx + 1, x1 + 14, y1 + 19);
+    ctx.textAlign = 'left';
+  });
+}
+
+// ── Render Results Panel ───────────────────────────────
+function renderResults(data) {
+  const panel = document.getElementById('sidebarRight');
+  const items = data.inventory || [];
+  const alerts = data.dashboard_alerts || [];
+
+  let html = '';
+
+  const score = data.overall_health_score ?? 0;
+  const scoreColor = score >= 75 ? 'var(--pass)' : score >= 50 ? 'var(--warn)' : 'var(--fail)';
+  html += `
+    <div class="score-card">
+      <div class="score-num" style="color:${scoreColor}">${score}</div>
+      <div class="score-lbl">Overall Health Score</div>
+    </div>`;
+
+  html += `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--text)">${data.total_items ?? items.length}</div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Items</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:${alerts.length?'var(--fail)':'var(--pass)'}">${data.spoilage_alert_count ?? 0}</div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Alerts</div>
+      </div>
+    </div>`;
+
+  if (alerts.length) {
+    html += `<div class="alert-box" style="display:block">
+      <div class="alert-title">⚠ Alerts</div>
+      ${alerts.map(a => `<div style="margin-bottom:4px">• ${a}</div>`).join('')}
+    </div>`;
+  }
+
+  html += `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Detected Items</div>`;
+
+  items.forEach((item, idx) => {
+    const q = item.quality_rating ?? 0;
+    const badgeCls = item.is_spoiling ? 'badge-fail' : q >= 7 ? 'badge-pass' : q >= 5 ? 'badge-warn' : 'badge-fail';
+    const badgeTxt = item.is_spoiling ? '⚠ SPOILING' : q >= 7 ? '✓ FRESH' : q >= 5 ? '~ AGING' : '✗ POOR';
+    const barColor = item.is_spoiling ? 'var(--fail)' : q >= 7 ? 'var(--pass)' : q >= 5 ? 'var(--warn)' : 'var(--fail)';
+
+    html += `
+      <div class="item-card" id="card-${idx}" onclick="highlightItem(${idx})">
+        <div class="item-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="background:${barColor};color:#000;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${idx+1}</div>
+            <span class="item-name">${item.item_name}</span>
+          </div>
+          <span class="item-badge ${badgeCls}">${badgeTxt}</span>
+        </div>
+        <div class="item-row"><span>Quantity</span><span>${item.quantity} ${item.unit}</span></div>
+        <div class="item-row"><span>Quality</span><span style="color:${barColor}">${q}/10</span></div>
+        <div class="item-row"><span>Expiry</span><span>${item.possible_expiry_days != null ? item.possible_expiry_days + 'd' : 'N/A'}</span></div>
+        ${item.observations ? `<div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5">${item.observations}</div>` : ''}
+        <div class="quality-bar">
+          <div class="quality-fill" style="width:${(q/10)*100}%;background:${barColor}"></div>
+        </div>
+      </div>`;
+  });
+
+  panel.innerHTML = html;
+}
+
+// ── Highlight item on click ────────────────────────────
+function highlightItem(idx) {
+  document.querySelectorAll('.item-card').forEach(c => c.classList.remove('highlighted'));
+  document.getElementById(`card-${idx}`)?.classList.add('highlighted');
+
+  const canvas  = document.getElementById('canvas');
+  const ctx     = canvas.getContext('2d');
+  const imgW    = canvas.width;
+  const imgH    = canvas.height;
+
+  drawBoxes(currentItems);
+
+  const item = currentItems[idx];
+  if (!item?.bbox) return;
+  const [ymin,xmin,ymax,xmax] = item.bbox;
+  const x1 = (xmin/1000)*imgW, y1 = (ymin/1000)*imgH;
+  const w  = ((xmax-xmin)/1000)*imgW, h = ((ymax-ymin)/1000)*imgH;
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([6, 3]);
+  ctx.strokeRect(x1-3, y1-3, w+6, h+6);
+  ctx.setLineDash([]);
+}
+</script>
+
+</body>
+</html>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+print(1896574* 23516723)
+print(50*"*")
+print(50*"*")
+print("I like mangos and starawberries and also pinipalleo")
+print(50*"*")
