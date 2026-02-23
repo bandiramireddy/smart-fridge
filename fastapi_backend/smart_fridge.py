@@ -49,6 +49,7 @@ def llm_call(base64_image:bytes,config,provider:str):
     model=config["llm_model"][provider]["name"]
     system_prompt=config["prompt_template"]["system_prompt"]
     analysis_prompt=config["prompt_template"]["analysis_prompt"]
+    max_tokens=config["llm_model"][provider]["max_tokens"]
     if provider=="openai":
         client = OpenAI()
         messages = [
@@ -65,7 +66,7 @@ def llm_call(base64_image:bytes,config,provider:str):
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                max_completion_tokens=2048,
+                max_completion_tokens=max_tokens
             )
             msg = response.choices[0].message
             if hasattr(msg, "refusal") and msg.refusal:
