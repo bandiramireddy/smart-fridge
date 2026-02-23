@@ -1,6 +1,6 @@
 llm_model:
   openai:
-    name: gpt-4o
+    name: gpt-5
     temperature: 1
   groq:
     name: groq-2
