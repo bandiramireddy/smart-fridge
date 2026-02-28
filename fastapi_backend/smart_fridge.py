@@ -1,3 +1,5 @@
+from http import client
+import os
 import sys
 from pathlib import Path
 import base64
@@ -44,11 +46,11 @@ def get_mime_type(base64_bytes: str):
     with Image.open(io.BytesIO(img_data)) as img:
         fmt = img.format.lower() # returns 'jpeg', 'png', 'webp', etc.
         return f"image/{fmt}"
-def llm_call(base64_image:bytes,config,provider:str):
+def llm_call(base64_image:bytes,metadata:dict,config,provider:str):
     #  system_prompt=load_config()['system_prompt']
     model=config["llm_model"][provider]["name"]
     system_prompt=config["prompt_template"]["system_prompt"]
-    analysis_prompt=config["prompt_template"]["analysis_prompt"]
+    analysis_prompt=config["prompt_template"]["analysis_prompt"].replace("{{temperature_value}}", str(metadata.get("temperature", "unknown")))
     max_tokens=config["llm_model"][provider]["max_tokens"]
     if provider=="openai":
         client = OpenAI()
@@ -85,6 +87,81 @@ def llm_call(base64_image:bytes,config,provider:str):
             if "is only supported by certain models" in str(e):
                 raise ValueError(f"Model '{model}' does not support image URLs. Use gpt-4-vision, gpt-4-turbo, or gpt-4o instead.") from e
             raise
+
+# import base64
+# import json
+
+def llm_openrouter_call(base64_image: bytes, metadata: dict, config, provider: str):
+    # Load parameters from config
+    model = f"openrouter/{config[provider]['name']}"
+    system_prompt = config["prompt_template"]["system_prompt"]
+    analysis_prompt = config["prompt_template"]["analysis_prompt"].replace("{{temperature_value}}", str(metadata.get("temperature", "0")))
+    max_tokens = config[provider]["max_tokens"]
+    
+    # 1. Construct the Multimodal Messages
+    # Convert image bytes to string if it isn't already
+    if isinstance(base64_image, bytes):
+        base64_image_str = base64_image.decode('utf-8')
+    else:
+        base64_image_str = base64_image
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": analysis_prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;ba se64,{base64_image_str}"
+                    }
+                }
+            ]
+        }
+    ]
+
+    if provider == "openrouter":
+        OPENROUTER_API_KEY=os.getenv("OPENROUTER_API_KEY")
+        client = OpenAI(base_url="https://openrouter.ai/api/v1",api_key=OPENROUTER_API_KEY )
+        try:
+            # 2. API Call with Reasoning enabled via extra_body
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_completion_tokens=max_tokens,
+                # This enables the 'thinking'/reasoning tokens
+                extra_body={
+                    "reasoning": {"enabled": True}
+                }
+            )
+            
+            msg = response.choices[0].message
+            
+            if hasattr(msg, "refusal") and msg.refusal:
+                raise ValueError(f"Model refused: {msg.refusal}")
+            
+            # 3. Extract reasoning if available
+            # OpenRouter often puts reasoning in 'reasoning_details' or 'reasoning'
+            reasoning = getattr(msg, "reasoning", None)
+            
+            return {
+                "content": msg.content,
+                "reasoning": reasoning, # Added to your return dict
+                "model": response.model,
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+                "finish_reason": response.choices[0].finish_reason
+            }
+            
+        except Exception as e:
+            if "is only supported by certain models" in str(e):
+                raise ValueError(
+                    f"Model '{model}' does not support images. "
+                    "Try 'openrouter/free' or a specific vision model."
+                ) from e
+            raise e
 @app.post("/analyze")
 async def analyze_image(payload: ImagePayload, request: Request):
     # 1. Decode the image from the Pydantic model
@@ -93,7 +170,44 @@ async def analyze_image(payload: ImagePayload, request: Request):
     # 2. Extract browser/client info from the live Request object
     browser_info = request.headers.get("user-agent")
     client_ip = request.client.host
-    llm_response = llm_call(payload.image, config, "openai")
+    llm_response = llm_call(payload.image,payload.metadata, config, "openai")
+    db_insert_data = {
+        "llm_response": llm_response,
+        "bytes_len": len(image_bytes),
+        "image_bytes": payload.image,  # Base64 string (not decoded bytes)
+        "custom_metadata": payload.metadata,
+        "company_id": payload.company_id,
+        "machine_id": payload.machine_id,
+        "camera_id": payload.camera_id,
+        "headers": str(request.headers),
+        "client_ip": client_ip,
+    }
+    # print("DB Insert Data:", db_insert_data)  # Debug: Check the data before insertion
+    from db.db_operations import insert_analysis_result
+    insert_result = insert_analysis_result(db_insert_data)
+    print("DB Insert Result:", insert_result)  # Debug: Check the result of DB insertion
+    return {
+        "message": "Image decoded and request captured",
+        "request": {
+            "bytes_len": len(image_bytes),
+            "custom_metadata": payload.metadata,
+            "company_id": payload.company_id,
+            "machine_id": payload.machine_id,
+            "camera_id": payload.camera_id,
+            "browser": browser_info,
+            "ip": client_ip
+        },
+        "llm_response": llm_response
+    }
+@app.post("/analyze_openrouter")
+async def analyze_image_openrouter(payload: ImagePayload, request: Request):
+    # 1. Decode the image from the Pydantic model
+    image_bytes = base64.b64decode(payload.image)
+    
+    # 2. Extract browser/client info from the live Request object
+    browser_info = request.headers.get("user-agent")
+    client_ip = request.client.host
+    llm_response = llm_openrouter_call(payload.image,payload.metadata, config, "openrouter")
     db_insert_data = {
         "llm_response": llm_response,
         "bytes_len": len(image_bytes),

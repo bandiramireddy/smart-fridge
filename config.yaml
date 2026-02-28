@@ -1,12 +1,16 @@
 llm_model:
   openai:
-    name: gpt-5-mini
+    name: gpt-5
     temperature: 1
     max_tokens: 4096
   groq:
     name: groq-2
     temperature: 1
 
+openrouter:
+    name: auto
+    temperature: 1
+    max_tokens: 4096
 prompt_template:
   system_prompt: |
     You are a food inventory and quality control system.
@@ -19,7 +23,7 @@ prompt_template:
   analysis_prompt: |
     Analyze this image and identify all visible food/inventory items.
     If no items are found, return the structure with an empty inventory array.
-
+    The average 30 min temperature is {{temperature_value}}°C.
     Respond with this exact JSON structure, no other text:
 
     {
@@ -48,4 +52,4 @@ prompt_template:
     - If the item fills most of the frame, bbox should be close to [0, 0, 1000, 1000]
     - bbox format is [ymin, xmin, ymax, xmax] normalized 0-1000
     - For items in packaging/bags, the bbox covers the WHOLE bag, not just part of it
-    - Do NOT clip the bbox at the center of the image — extend to edges if item goes to edg
+    - Do NOT clip the bbox at the center of the image — extend to edges if item goes to edge

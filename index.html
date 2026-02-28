@@ -113,7 +113,8 @@ body {
   margin-bottom: 5px;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -125,7 +126,8 @@ body {
   outline: none;
   transition: border-color 0.2s;
 }
-.field input:focus { border-color: var(--accent); }
+.field input:focus,
+.field select:focus { border-color: var(--accent); }
 
 .analyze-btn {
   margin-top: auto;
@@ -344,6 +346,14 @@ canvas {
         <label>Camera ID</label>
         <input type="text" id="cameraId" value="cam_001">
       </div>
+      <div class="field">
+        <label>Temperature (°C)</label>
+        <select id="temperature">
+          <option value="0">0°C</option>
+          <option value="5">5°C</option>
+          <option value="10">10°C</option>
+        </select>
+      </div>
     </div>
 
     <button class="analyze-btn" id="analyzeBtn" onclick="sendImage()" disabled>
@@ -431,7 +441,7 @@ async function sendImage() {
     const base64Image = reader.result.split(',')[1];
     const payload = {
       image: base64Image,
-      metadata: { param1: "value1" },
+      metadata: { temperature: document.getElementById('temperature').value },
       company_id: document.getElementById('companyId').value,
       machine_id: document.getElementById('machineId').value,
       camera_id: document.getElementById('cameraId').value
