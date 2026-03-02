@@ -31,11 +31,12 @@ def read_root():
     return {"Hello": "World"}
 
 class ImagePayload(BaseModel):  
-    image: str  # The Base64 string
-    metadata: dict  # Your custom request info (param1, etc.)
+    image: str          # The Base64 string
+    metadata: dict      # Your custom request info (param1, etc.)
     company_id: str = "techbreakerllc"  # Optional company identifier
-    machine_id: str   # Optional machine identifier
-    camera_id: str   # Optional camera identifier,1 friger can have multiple cameras, so we can use a list to store multiple camera ids.
+    machine_id: str     # Optional machine identifier
+    camera_id: str      # Optional camera identifier — 1 fridge can have multiple cameras
+    model: str = None   # Optional: override the model (used by /analyze_openrouter)
 
 def get_mime_type(base64_bytes: str):
     # Decode the base64 to check the header
@@ -91,12 +92,28 @@ def llm_call(base64_image:bytes,metadata:dict,config,provider:str):
 # import base64
 # import json
 
-def llm_openrouter_call(base64_image: bytes, metadata: dict, config, provider: str):
-    # Load parameters from config
-    model = f"openrouter/{config[provider]['name']}"
+def llm_openrouter_call(base64_image: bytes, metadata: dict, config, provider: str, model_override: str = None):
+    """
+    Call OpenRouter API with a dynamically selected model.
+    
+    - model_override: if provided (e.g. sent from the HTML frontend), this model
+      is used directly. Otherwise falls back to config[provider]['name'].
+    """
     system_prompt = config["prompt_template"]["system_prompt"]
-    analysis_prompt = config["prompt_template"]["analysis_prompt"].replace("{{temperature_value}}", str(metadata.get("temperature", "0")))
+    analysis_prompt = config["prompt_template"]["analysis_prompt"].replace(
+        "{{temperature_value}}", str(metadata.get("temperature", "0"))
+    )
     max_tokens = config[provider]["max_tokens"]
+
+    # ── Model resolution ─────────────────────────────────────────────────────
+    # If the frontend sent a specific model ID (e.g. "openai/gpt-5"),
+    # use it directly. Otherwise fall back to the config default.
+    if model_override:
+        # Strip leading "openrouter/" prefix if the frontend accidentally added it
+        model = model_override.lstrip("openrouter/") if model_override.startswith("openrouter/openrouter/") else model_override
+    else:
+        model = config[provider]["name"]   # e.g. "qwen/qwen3-235b-a22b"
+    # ─────────────────────────────────────────────────────────────────────────
     
     # 1. Construct the Multimodal Messages
     # Convert image bytes to string if it isn't already
@@ -114,7 +131,7 @@ def llm_openrouter_call(base64_image: bytes, metadata: dict, config, provider: s
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/jpeg;ba se64,{base64_image_str}"
+                        "url": f"data:image/jpeg;base64,{base64_image_str}"
                     }
                 }
             ]
@@ -147,12 +164,15 @@ def llm_openrouter_call(base64_image: bytes, metadata: dict, config, provider: s
             
             return {
                 "content": msg.content,
-                "reasoning": reasoning, # Added to your return dict
-                "model": response.model,
+                "reasoning": reasoning,
+                "model": response.model,          # actual model used (from OpenRouter response)
+                "model_requested": model,         # what we sent in the request
                 "prompt_tokens": response.usage.prompt_tokens,
                 "completion_tokens": response.usage.completion_tokens,
                 "total_tokens": response.usage.total_tokens,
-                "finish_reason": response.choices[0].finish_reason
+                "finish_reason": response.choices[0].finish_reason,
+                # "usage":response.usage,
+                "cost": response.usage.cost,
             }
             
         except Exception as e:
@@ -207,22 +227,31 @@ async def analyze_image_openrouter(payload: ImagePayload, request: Request):
     # 2. Extract browser/client info from the live Request object
     browser_info = request.headers.get("user-agent")
     client_ip = request.client.host
-    llm_response = llm_openrouter_call(payload.image,payload.metadata, config, "openrouter")
+
+    # 3. Call OpenRouter — pass payload.model so the frontend can pick any model
+    llm_response = llm_openrouter_call(
+        payload.image,
+        payload.metadata,
+        config,
+        "openrouter",
+        model_override=payload.model   # ← dynamic model from HTML frontend
+    )
+
     db_insert_data = {
         "llm_response": llm_response,
         "bytes_len": len(image_bytes),
-        "image_bytes": payload.image,  # Base64 string (not decoded bytes)
+        "image_bytes": payload.image,
         "custom_metadata": payload.metadata,
+        "usage": llm_response.get("usage", {}), #Usage include tokesn and cost
         "company_id": payload.company_id,
         "machine_id": payload.machine_id,
         "camera_id": payload.camera_id,
         "headers": str(request.headers),
         "client_ip": client_ip,
     }
-    # print("DB Insert Data:", db_insert_data)  # Debug: Check the data before insertion
     from db.db_operations import insert_analysis_result
     insert_result = insert_analysis_result(db_insert_data)
-    print("DB Insert Result:", insert_result)  # Debug: Check the result of DB insertion
+    print("DB Insert Result:", insert_result)
     return {
         "message": "Image decoded and request captured",
         "request": {
@@ -232,7 +261,8 @@ async def analyze_image_openrouter(payload: ImagePayload, request: Request):
             "machine_id": payload.machine_id,
             "camera_id": payload.camera_id,
             "browser": browser_info,
-            "ip": client_ip
+            "ip": client_ip,
+            "model_requested": payload.model,   # echo back so frontend can verify
         },
         "llm_response": llm_response
     }

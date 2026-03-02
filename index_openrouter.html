@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Techbreaker Smartfreze Solution</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --surface: #13161b;
+      --surface2: #1a1e25;
+      --surface3: #20252e;
+      --border: #252b35;
+      --pass: #00d97e;
+      --warn: #f59e0b;
+      --fail: #ef4444;
+      --text: #e8edf5;
+      --muted: #5a6478;
+      --accent: #00d97e;
+      --accent2: #7c6fe0;
+      --accent3: #0ea5e9;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .brand-main {
+      font-size: 15px;
+      letter-spacing: 1px;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .brand-dot {
+      color: var(--accent);
+    }
+
+    .header-fields {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .hf {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    }
+
+    .hf label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .hf input,
+    .hf select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .hf input:focus,
+    .hf select:focus {
+      border-color: var(--accent);
+    }
+
+    .hf select option {
+      background: var(--surface2);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 217, 126, 0.1);
+      border: 1px solid rgba(0, 217, 126, 0.2);
+      color: var(--accent);
+      font-size: 10px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+
+    .pulse {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.3
+      }
+    }
+
+    .compare-btn {
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 9px 20px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .compare-btn:hover {
+      opacity: 0.9;
+    }
+
+    .compare-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* ── MAIN BODY ── */
+    .main-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── LEFT: Image Upload ── */
+    .image-panel {
+      width: 320px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 16px;
+    }
+
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface2);
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(0, 217, 126, 0.04);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .upload-text {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .upload-text strong {
+      color: var(--accent);
+    }
+
+    .preview-wrap {
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: none;
+    }
+
+    .preview-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: 260px;
+      object-fit: contain;
+    }
+
+    .run-all-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 9px;
+      padding: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      text-transform: uppercase;
+      margin-top: auto;
+    }
+
+    .run-all-btn:hover {
+      opacity: 0.9;
+    }
+
+    .run-all-btn:active {
+      transform: scale(0.97);
+    }
+
+    .run-all-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── RIGHT: Comparison Grid ── */
+    .compare-area {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .compare-area-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      text-align: center;
+      gap: 12px;
+    }
+
+    .compare-area-empty .empty-icon {
+      font-size: 48px;
+      opacity: 0.25;
+    }
+
+    .compare-area-empty p {
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .compare-area-empty strong {
+      color: var(--accent2);
+    }
+
+    /* toolbar row */
+    .compare-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .compare-toolbar h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .add-block-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      letter-spacing: 0.5px;
+    }
+
+    .add-block-btn:hover {
+      border-color: var(--accent);
+    }
+
+    /* blocks grid */
+    .blocks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Model Block ── */
+    .model-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .model-block:hover {
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .model-block.running {
+      border-color: var(--accent2);
+    }
+
+    .model-block.done {
+      border-color: rgba(0, 217, 126, 0.35);
+    }
+
+    .model-block.error {
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .block-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      gap: 8px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+
+    .block-model-select {
+      flex: 1 1 0;
+      min-width: 0;
+      width: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .block-model-select:focus {
+      border-color: var(--accent2);
+    }
+
+    .block-model-select option,
+    .block-model-select optgroup {
+      background: #1a1e25;
+    }
+
+    .block-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .block-run-btn {
+      background: linear-gradient(135deg, #7c6fe0, #0ea5e9);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .block-run-btn:hover {
+      opacity: 0.85;
+    }
+
+    .block-run-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .block-remove-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 7px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .block-remove-btn:hover {
+      border-color: var(--fail);
+      color: var(--fail);
+    }
+
+    .block-status {
+      padding: 6px 14px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 5px;
+    }
+
+    .block-status.show {
+      display: flex;
+    }
+
+    .block-status.status-running {
+      color: var(--accent2);
+      background: rgba(124, 111, 224, 0.06);
+    }
+
+    .block-status.status-done {
+      color: var(--pass);
+      background: rgba(0, 217, 126, 0.05);
+    }
+
+    .block-status.status-error {
+      color: var(--fail);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .mini-spin {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top: 2px solid var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .block-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    /* results inside block */
+    .block-score-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mini-stat {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .mini-stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .mini-stat-lbl {
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .block-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mini-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      gap: 8px;
+    }
+
+    .mini-item-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-badge {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .mb-pass {
+      background: rgba(0, 217, 126, 0.15);
+      color: var(--pass);
+    }
+
+    .mb-warn {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warn);
+    }
+
+    .mb-fail {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--fail);
+    }
+
+    .block-alerts {
+      background: rgba(239, 68, 68, 0.07);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 10px;
+      color: #fca5a5;
+      line-height: 1.6;
+    }
+
+    .block-alerts-title {
+      font-weight: 600;
+      color: var(--fail);
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-size: 9px;
+    }
+
+    .block-raw {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 10px;
+      color: var(--muted);
+      max-height: 140px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+
+    .block-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 28px 0;
+    }
+
+    /* ── Timing ── */
+    .timing-chip {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      font-family: 'DM Mono', monospace;
+      min-width: 44px;
+      text-align: right;
+    }
+
+    .timing-chip.running {
+      color: var(--accent2);
+      animation: timerPulse 1s ease-in-out infinite;
+    }
+
+    .timing-chip.fast {
+      color: var(--pass);
+    }
+
+    .timing-chip.medium {
+      color: var(--warn);
+    }
+
+    .timing-chip.slow {
+      color: var(--fail);
+    }
+
+    @keyframes timerPulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.5
+      }
+    }
+
+    /* progress bar under header */
+    .block-progress {
+      height: 3px;
+      background: var(--border);
+      overflow: hidden;
+      display: none;
+    }
+
+    .block-progress.show {
+      display: block;
+    }
+
+    .block-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent3));
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .block-progress-fill.indeterminate {
+      width: 40%;
+      animation: indeterminate 1.4s ease-in-out infinite;
+    }
+
+    @keyframes indeterminate {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(300%);
+      }
+    }
+
+    /* speed comparison bar at bottom of block */
+    .speed-bar-wrap {
+      margin-top: 2px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .speed-bar-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .speed-bar-label span:last-child {
+      color: var(--text);
+      font-size: 10px;
+    }
+
+    .speed-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .speed-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* timing footer inside status bar */
+    .timing-footer {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+    }
+
+    .time-badge.fast {
+      border-color: rgba(0, 217, 126, 0.3);
+      color: var(--pass);
+      background: rgba(0, 217, 126, 0.06);
+    }
+
+    .time-badge.medium {
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--warn);
+      background: rgba(245, 158, 11, 0.06);
+    }
+
+    .time-badge.slow {
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--fail);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    .timing-footer::-webkit-scrollbar {
+      height: 3px;
+    }
+
+    .timing-footer::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .timing-footer::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    /* ── Token / Cost chips ── */
+    .token-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(124, 111, 224, 0.08);
+      border: 1px solid rgba(124, 111, 224, 0.25);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+      color: #a78bfa;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .cost-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+      color: var(--warn);
+      letter-spacing: 0.3px;
+    }
+
+    .cost-chip.free {
+      background: rgba(0, 217, 126, 0.08);
+      border-color: rgba(0, 217, 126, 0.25);
+      color: var(--pass);
+    }
+
+    /* ── Block Canvas ── */
+    .block-canvas-wrap {
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: zoom-in;
+    }
+
+    .block-canvas-wrap canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .block-canvas-wrap:hover canvas {
+      transform: scale(1.02);
+      filter: brightness(1.05);
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity 0.2s, background 0.2s;
+      pointer-events: none;
+    }
+
+    .block-canvas-wrap:hover .canvas-overlay {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.35);
+      pointer-events: all;
+    }
+
+    .canvas-action-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      backdrop-filter: blur(6px);
+      transition: background 0.15s, transform 0.1s;
+      text-transform: uppercase;
+    }
+
+    .canvas-action-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: scale(1.04);
+    }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      backdrop-filter: blur(8px);
+      cursor: zoom-out;
+    }
+
+    #lightbox.show {
+      display: flex;
+    }
+
+    #lightbox canvas {
+      max-width: 92vw;
+      max-height: 82vh;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
+      cursor: default;
+    }
+
+    .lightbox-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: default;
+    }
+
+    .lightbox-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .lightbox-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+      text-transform: uppercase;
+    }
+
+    .lightbox-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .lightbox-btn.close-btn {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .lightbox-btn.close-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    #loader.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loader-text {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- GLOBAL LOADER -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text">Running all models...</div>
+  </div>
+
+  <!-- ══ TOPBAR ══ -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-main">Techbreaker</div>
+      <div class="brand-sub">Smart<span class="brand-dot">freze</span> </div>
+    </div>
+
+    <!-- Header fields -->
+    <div class="header-fields">
+      <div class="hf">
+        <label>Machine ID</label>
+        <input type="text" id="machineId" value="fridge_002" placeholder="fridge_002">
+      </div>
+      <div class="hf">
+        <label>Fridge ID</label>
+        <input type="text" id="fridgeId" value="fridge_A1" placeholder="fridge_A1">
+      </div>
+      <div class="hf">
+        <label>Camera ID</label>
+        <input type="text" id="cameraId" value="cam_001" placeholder="cam_001">
+      </div>
+      <div class="hf">
+        <label>Temperature (°C)</label>
+        <select id="temperature">
+          <option value="0">0°C — Freezing</option>
+          <option value="2">2°C — Near Freeze</option>
+          <option value="4">4°C — Refrigerator</option>
+          <option value="7" selected>7°C — Cold</option>
+          <option value="10">10°C — Cellar</option>
+          <option value="15">15°C — Cool Room</option>
+          <option value="20">20°C — Ambient</option>
+          <option value="25">25°C — Warm</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="pulse"></div> LIVE
+      </div>
+      <button class="compare-btn" onclick="addBlock()">⚡ Add Model</button>
+    </div>
+  </div>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main-body">
+
+    <!-- IMAGE PANEL -->
+    <div class="image-panel">
+      <div class="panel-title">Image Input</div>
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="imageInput" accept="image/*" onchange="handleFile()">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text"><strong>Click to upload</strong> or drag & drop<br>JPG · PNG · WEBP</div>
+      </div>
+
+      <div class="preview-wrap" id="previewWrap">
+        <img id="previewImg" src="" alt="preview">
+      </div>
+
+      <div style="margin-top:4px">
+        <div class="panel-title" style="margin-bottom:8px">Active Models</div>
+        <div id="modelSummary" style="font-size:10px;color:var(--muted);line-height:1.8">
+          No blocks added yet.<br>Click <span style="color:var(--accent2)">Add Model</span> to start.
+        </div>
+      </div>
+
+      <button class="run-all-btn" id="runAllBtn" onclick="runAll()" disabled>
+        ▶ Run All Models
+      </button>
+    </div>
+
+    <!-- COMPARE AREA -->
+    <div class="compare-area" id="compareArea">
+      <div class="compare-area-empty" id="emptyState">
+        <div class="empty-icon">🤖</div>
+        <p>Click <strong>Add Model</strong> to open<br>model comparison blocks,<br>then upload an image and run
+          analysis.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Constants ───────────────────────────────────────────
+    // ── Verified OpenRouter Vision Model IDs (March 2026) ────
+    const MODELS = [
+      // ── OpenAI ──────────────────────────────────────────────
+      { id: 'openai/gpt-4o', label: 'GPT-4o Vision', color: '#10b981', badge: 'STABLE' },
+      { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini Vision', color: '#34d399', badge: 'CHEAP' },
+      { id: 'openai/gpt-4.1', label: 'GPT-4.1 Vision', color: '#059669', badge: 'NEW' },
+      { id: 'openai/gpt-4.1-mini', label: 'GPT-4.1 Mini Vision', color: '#6ee7b7', badge: 'CHEAP' },
+      { id: 'openai/gpt-5', label: 'GPT-5 Vision', color: '#0ea5e9', badge: 'LATEST' },
+      { id: 'openai/gpt-5-mini', label: 'GPT-5 Mini Vision', color: '#38bdf8', badge: 'LATEST' },
+      // ── Google ───────────────────────────────────────────────
+      { id: 'google/gemini-2.5-pro-preview', label: 'Gemini 2.5 Pro (Preview)', color: '#a78bfa', badge: 'BEST' },
+      { id: 'google/gemini-2.5-flash-preview-09-2025', label: 'Gemini 2.5 Flash (Preview)', color: '#8b5cf6', badge: 'FAST' },
+      { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', color: '#c4b5fd', badge: 'CHEAP' },
+      { id: 'google/gemini-2.0-flash', label: 'Gemini 2.0 Flash', color: '#7c3aed', badge: 'STABLE' },
+      // ── Qwen ─────────────────────────────────────────────────
+      { id: 'qwen/qwen3.5-flash-02-23', label: 'Qwen 3.5 Flash', color: '#f97316', badge: 'CHEAP' },
+      { id: 'qwen/qwen3.5-35b-a3b', label: 'Qwen 3.5 35B-A3B', color: '#fb923c', badge: 'BALANCED' },
+      { id: 'qwen/qwen3.5-27b', label: 'Qwen 3.5 27B', color: '#f59e0b', badge: 'BALANCED' },
+      { id: 'qwen/qwen3.5-122b-a10b', label: 'Qwen 3.5 122B-A10B', color: '#ea580c', badge: 'PREMIUM' },
+      // ── Anthropic ────────────────────────────────────────────
+      { id: 'anthropic/claude-3.7-sonnet', label: 'Claude 3.7 Sonnet Vision', color: '#00d97e', badge: 'BEST' },
+      { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet Vision', color: '#34d399', badge: 'STABLE' },
+      // ── Meta ─────────────────────────────────────────────────
+      { id: 'meta-llama/llama-4-maverick', label: 'Llama 4 Maverick Vision', color: '#ec4899', badge: 'FREE' },
+      { id: 'meta-llama/llama-4-scout', label: 'Llama 4 Scout Vision', color: '#f472b6', badge: 'FREE' },
+      // ── OpenRouter ───────────────────────────────────────────
+      { id: 'openrouter/auto', label: 'OpenRouter Auto (Best)', color: '#7c6fe0', badge: 'AUTO' },
+    ];
+
+    // Only 1 default block — user adds more with ＋ Add Block
+    const DEFAULT_MODELS = [
+      'openai/gpt-4o',
+    ];
+
+    // ── State ────────────────────────────────────────────────
+    let selectedFile = null;
+    let base64Image = null;
+    let originalImage = new Image();
+    let blockCount = 0;
+    let blocks = []; // { id, el }
+
+    // ── File Handling ────────────────────────────────────────
+    function handleFile() {
+      const file = document.getElementById('imageInput').files[0];
+      if (!file) return;
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        base64Image = e.target.result.split(',')[1];
+        originalImage = new Image();
+        originalImage.src = e.target.result;
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('previewWrap').style.display = 'block';
+        document.getElementById('uploadZone').style.display = 'none';
+        updateRunAllBtn();
+        enableAllRunBtns();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function enableAllRunBtns() {
+      blocks.forEach(b => {
+        const btn = document.getElementById(`run-btn-${b.id}`);
+        if (btn) btn.disabled = false;
+      });
+    }
+
+    // drag & drop
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('dragover');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) {
+        document.getElementById('imageInput').files = e.dataTransfer.files;
+        handleFile();
+      }
+    });
+
+    // ── Init Compare ─────────────────────────────────────────
+    function initCompare() {
+      // Remove empty state
+      document.getElementById('emptyState')?.remove();
+
+      // Add toolbar if not present
+      if (!document.getElementById('compareTB')) {
+        const area = document.getElementById('compareArea');
+        area.innerHTML = `
+      <div class="compare-toolbar" id="compareTB">
+        <h2>⚡ Model Comparison Blocks</h2>
+        <button class="add-block-btn" onclick="addBlock()">＋ Add Block</button>
+      </div>
+      <div class="blocks-grid" id="blocksGrid"></div>
+    `;
+      }
+
+      // Add exactly 1 default block if none exist yet
+      if (blocks.length === 0) {
+        addBlock(DEFAULT_MODELS[0]);
+      }
+      updateModelSummary();
+    }
+
+    // ── Add a Model Block ─────────────────────────────────────
+    function addBlock(preselect = null) {
+      if (!document.getElementById('blocksGrid')) initCompare();
+      const id = ++blockCount;
+      const grid = document.getElementById('blocksGrid');
+
+      const div = document.createElement('div');
+      div.className = 'model-block';
+      div.id = `block-${id}`;
+
+      // Build grouped select options with badges
+      const groups = [
+        { label: 'OpenAI', prefix: 'openai/' },
+        { label: 'Google', prefix: 'google/' },
+        { label: 'Qwen', prefix: 'qwen/' },
+        { label: 'Anthropic', prefix: 'anthropic/' },
+        { label: 'Meta', prefix: 'meta-llama/' },
+        { label: 'OpenRouter', prefix: 'openrouter/' },
+      ];
+      let opts = '';
+      groups.forEach(g => {
+        const groupModels = MODELS.filter(m => m.id.startsWith(g.prefix));
+        if (!groupModels.length) return;
+        opts += `<optgroup label="── ${g.label} ──">`;
+        groupModels.forEach(m => {
+          opts += `<option value="${m.id}" ${preselect === m.id ? 'selected' : ''}>[${m.badge}] ${m.label}</option>`;
+        });
+        opts += `</optgroup>`;
+      });
+
+      div.innerHTML = `
+    <div class="block-header">
+      <select class="block-model-select" id="model-select-${id}" onchange="updateModelSummary()">
+        ${opts}
+      </select>
+      <div class="block-actions">
+        <span class="timing-chip" id="timing-${id}"></span>
+        <button class="block-run-btn" id="run-btn-${id}" onclick="runBlock(${id})" ${(!selectedFile) ? 'disabled' : ''}>▶ Analyze</button>
+        <button class="block-remove-btn" onclick="removeBlock(${id})" title="Remove">✕</button>
+      </div>
+    </div>
+    <div class="block-progress" id="progress-${id}">
+      <div class="block-progress-fill indeterminate" id="progress-fill-${id}"></div>
+    </div>
+    <div class="block-status" id="status-${id}"></div>
+    <div class="block-body" id="body-${id}">
+      <div class="block-empty">Select a model and click <strong>▶ Analyze</strong><br>to see results here.</div>
+    </div>
+  `;
+
+      grid.appendChild(div);
+      blocks.push({ id, el: div });
+
+      // If image already loaded, enable the new block's run button immediately
+      if (selectedFile) {
+        const btn = document.getElementById(`run-btn-${id}`);
+        if (btn) btn.disabled = false;
+      }
+
+      updateModelSummary();
+      updateRunAllBtn();
+    }
+
+    // ── Remove Block ──────────────────────────────────────────
+    function removeBlock(id) {
+      const el = document.getElementById(`block-${id}`);
+      if (el) el.remove();
+      blocks = blocks.filter(b => b.id !== id);
+      updateModelSummary();
+      updateRunAllBtn();
+    }
+
+    // ── Update sidebar summary ────────────────────────────────
+    function updateModelSummary() {
+      const el = document.getElementById('modelSummary');
+      if (blocks.length === 0) {
+        el.innerHTML = `No blocks added yet.<br>Click <span style="color:var(--accent2)">Add Model</span> to start.`;
+        return;
+      }
+      el.innerHTML = blocks.map(b => {
+        const sel = document.getElementById(`model-select-${b.id}`);
+        const label = sel ? sel.options[sel.selectedIndex]?.text : '—';
+        const m = MODELS.find(x => x.id === sel?.value);
+        const color = m?.color || 'var(--muted)';
+        const badge = m?.badge || '';
+        return `<span style="color:${color}">▸</span> ${m?.label || label} <span style="font-size:9px;opacity:.5">${badge}</span>`;
+      }).join('<br>');
+    }
+
+    function updateRunAllBtn() {
+      document.getElementById('runAllBtn').disabled = !selectedFile || blocks.length === 0;
+    }
+
+    // ── Timing helpers ───────────────────────────────────────
+    const blockTimings = {}; // id → elapsed seconds
+
+    function speedClass(secs) {
+      if (secs <= 5) return 'fast';
+      if (secs <= 15) return 'medium';
+      return 'slow';
+    }
+    function speedLabel(secs) {
+      if (secs <= 5) return '⚡ Fast';
+      if (secs <= 15) return '~ Medium';
+      return '🐢 Slow';
+    }
+
+    function formatCostUsd(rawCost) {
+      if (rawCost === null || rawCost === undefined || rawCost === '') return null;
+      const usd = Number(rawCost);
+      if (!Number.isFinite(usd) || usd < 0) return null;
+      if (usd === 0) return { text: 'FREE', isFree: true };
+      if (usd < 0.0001) return { text: '<$0.0001', isFree: false };
+      return { text: `$${usd.toFixed(6)}`, isFree: false };
+    }
+
+    // ── Run Single Block ──────────────────────────────────────
+    async function runBlock(id) {
+      if (!selectedFile) { alert('Please upload an image first.'); return; }
+
+      const sel = document.getElementById(`model-select-${id}`);
+      const modelId = sel?.value;
+      const block = document.getElementById(`block-${id}`);
+      const statusEl = document.getElementById(`status-${id}`);
+      const bodyEl = document.getElementById(`body-${id}`);
+      const runBtn = document.getElementById(`run-btn-${id}`);
+      const timingEl = document.getElementById(`timing-${id}`);
+      const progressEl = document.getElementById(`progress-${id}`);
+      const fillEl = document.getElementById(`progress-fill-${id}`);
+
+      // UI: running
+      block.className = 'model-block running';
+      statusEl.className = 'block-status show status-running';
+      statusEl.innerHTML = `<div class="mini-spin"></div><span>Calling <strong>${modelId}</strong>…</span>`;
+      runBtn.disabled = true;
+      timingEl.textContent = '0.0s';
+      timingEl.className = 'timing-chip running';
+      delete blockTimings[id];
+      const oldBar = document.getElementById(`speedbar-${id}`);
+      if (oldBar) oldBar.remove();
+
+      // Show progress bar (indeterminate)
+      progressEl.classList.add('show');
+      fillEl.className = 'block-progress-fill indeterminate';
+
+      const t0 = Date.now();
+
+      // Live ticker — updates every 100ms
+      let ticker = setInterval(() => {
+        const elapsed = (Date.now() - t0) / 1000;
+        timingEl.textContent = elapsed.toFixed(1) + 's';
+        // update status text with live counter
+        const msgSpan = statusEl.querySelector('span');
+        if (msgSpan) msgSpan.innerHTML = `Calling <strong>${modelId}</strong>… <span style="color:var(--text)">${elapsed.toFixed(1)}s</span>`;
+      }, 100);
+
+      const payload = {
+        image: base64Image,
+        model: modelId,                          // sent to backend as payload.model
+        metadata: { temperature: document.getElementById('temperature').value },
+        company_id: 'techbreakerllc',
+        machine_id: document.getElementById('machineId').value,
+        fridge_id: document.getElementById('fridgeId').value,
+        camera_id: document.getElementById('cameraId').value,
+      };
+
+      try {
+        const resp = await fetch('http://localhost:8000/analyze_openrouter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        clearInterval(ticker);
+        const elapsed = (Date.now() - t0) / 1000;
+        const elapsedStr = elapsed.toFixed(2) + 's';
+        const sc = speedClass(elapsed);
+        blockTimings[id] = elapsed;
+
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+        const outer = await resp.json();
+
+        // Finish progress bar
+        progressEl.classList.remove('show');
+        fillEl.className = 'block-progress-fill';
+
+        // Parse inner
+        let inner;
+        try {
+          const raw = outer.llm_response?.content || outer.llm_analysis?.content || JSON.stringify(outer);
+          const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '').trim();
+          inner = JSON.parse(cleaned);
+        } catch { inner = outer; }
+
+        const llmMeta = outer?.llm_response || outer?.llm_analysis || {};
+        const promptTok = llmMeta.prompt_tokens ?? llmMeta.usage?.prompt_tokens ?? null;
+        const completeTok = llmMeta.completion_tokens ?? llmMeta.usage?.completion_tokens ?? null;
+        const totalTok = llmMeta.total_tokens ?? llmMeta.usage?.total_tokens ?? null;
+        const rawCost = llmMeta.cost ?? null;
+        const costMeta = formatCostUsd(rawCost);
+        const costDisplay = costMeta?.text ?? null;
+        const isFree = costMeta?.isFree ?? false;
+
+        const tokenStr = totalTok !== null
+          ? `${totalTok.toLocaleString()} tok`
+          : (promptTok !== null ? `${promptTok}+${completeTok} tok` : null);
+
+        // UI: done
+        block.className = 'model-block done';
+        statusEl.className = 'block-status show status-done';
+        statusEl.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <span>✓ Analysis complete</span>
+        <span style="font-size:9px;color:var(--muted)">${speedLabel(elapsed)}</span>
+      </div>
+      <div class="timing-footer">
+        <span class="time-badge ${sc}">⏱ ${elapsedStr}</span>
+        ${tokenStr ? `<span class="token-chip">TOK ${tokenStr}</span>` : ''}
+        ${costDisplay ? `<span class="cost-chip${isFree ? ' free' : ''}">${costDisplay}</span>` : ''}
+      </div>`;
+
+        timingEl.textContent = elapsedStr;
+        timingEl.className = `timing-chip ${sc}`;
+
+        renderBlockResults(bodyEl, inner, modelId, elapsed, outer);
+        updateSpeedBars();
+
+      } catch (err) {
+        clearInterval(ticker);
+        const elapsed = (Date.now() - t0) / 1000;
+        const elapsedStr = elapsed.toFixed(2) + 's';
+        blockTimings[id] = elapsed;
+
+        progressEl.classList.remove('show');
+        fillEl.className = 'block-progress-fill';
+
+        block.className = 'model-block error';
+        statusEl.className = 'block-status show status-error';
+        statusEl.innerHTML = `
+      ✗ Error: ${err.message}
+      <div class="timing-footer">
+        <span class="time-badge slow">⏱ ${elapsedStr}</span>
+      </div>`;
+        timingEl.textContent = elapsedStr;
+        timingEl.className = 'timing-chip slow';
+        bodyEl.innerHTML = `<div class="block-empty" style="color:var(--fail)">${err.message}</div>`;
+      }
+
+      runBtn.disabled = false;
+    }
+
+    // ── Update speed comparison bars across all done blocks ──
+    function updateSpeedBars() {
+      const doneIds = Object.keys(blockTimings).map(Number);
+      if (doneIds.length < 1) return;
+      const maxT = Math.max(...doneIds.map(i => blockTimings[i]));
+
+      doneIds.forEach(id => {
+        const t = blockTimings[id];
+        const pct = maxT > 0 ? (t / maxT) * 100 : 100;
+        const sc = speedClass(t);
+        const color = sc === 'fast' ? 'var(--pass)' : sc === 'medium' ? 'var(--warn)' : 'var(--fail)';
+
+        let wrap = document.getElementById(`speedbar-${id}`);
+        const body = document.getElementById(`body-${id}`);
+        if (!body) return;
+
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.className = 'speed-bar-wrap';
+          wrap.id = `speedbar-${id}`;
+          body.appendChild(wrap);
+        }
+        wrap.innerHTML = `
+      <div class="speed-bar-label">
+        <span>Response Time</span>
+        <span>${t.toFixed(2)}s · ${speedLabel(t)}</span>
+      </div>
+      <div class="speed-bar-track">
+        <div class="speed-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>`;
+      });
+    }
+
+    // ── Draw bounding boxes on a canvas inside a block ───────
+    function drawBlockCanvas(canvasEl, items) {
+      canvasEl.width = originalImage.naturalWidth || originalImage.width;
+      canvasEl.height = originalImage.naturalHeight || originalImage.height;
+      const ctx = canvasEl.getContext('2d');
+      const imgW = canvasEl.width;
+      const imgH = canvasEl.height;
+
+      ctx.drawImage(originalImage, 0, 0);
+
+      items.forEach((item, idx) => {
+        const bbox = item.bbox;
+        if (!bbox || bbox.length < 4) return;
+
+        const [ymin, xmin, ymax, xmax] = bbox;
+        const x1 = (xmin / 1000) * imgW;
+        const y1 = (ymin / 1000) * imgH;
+        const w = ((xmax - xmin) / 1000) * imgW;
+        const h = ((ymax - ymin) / 1000) * imgH;
+
+        const color = item.is_spoiling ? '#ef4444'
+          : (item.quality_rating ?? 0) < 5 ? '#f59e0b'
+            : '#00d97e';
+
+        // Box fill + stroke
+        ctx.fillStyle = color + '22';
+        ctx.fillRect(x1, y1, w, h);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, imgW / 400);
+        ctx.strokeRect(x1, y1, w, h);
+
+        // Label background
+        const fontSize = Math.max(11, Math.min(15, imgW / 55));
+        ctx.font = `bold ${fontSize}px "DM Mono", monospace`;
+        const label = `${idx + 1}. ${item.item_name}  Q:${item.quality_rating ?? '?'}`;
+        const textW = ctx.measureText(label).width + 10;
+        const labelH = fontSize + 8;
+        const labelY = y1 > labelH + 4 ? y1 : y1 + h + labelH;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(x1, labelY - labelH, textW, labelH, 3)
+          : ctx.rect(x1, labelY - labelH, textW, labelH);
+        ctx.fill();
+
+        ctx.fillStyle = '#000';
+        ctx.fillText(label, x1 + 5, labelY - 3);
+
+        // Index circle
+        const r = Math.max(10, imgW / 80);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x1 + r + 2, y1 + r + 2, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.font = `bold ${r}px "DM Mono", monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(idx + 1, x1 + r + 2, y1 + r + 2 + r * 0.35);
+        ctx.textAlign = 'left';
+      });
+    }
+
+    // ── Render Results inside a block ────────────────────────
+    function renderBlockResults(bodyEl, data, modelId, elapsed, outerMeta) {
+      const items = data.inventory || [];
+      const alerts = data.dashboard_alerts || [];
+      const score = data.overall_health_score ?? '—';
+      const scoreColor = typeof score === 'number'
+        ? (score >= 75 ? 'var(--pass)' : score >= 50 ? 'var(--warn)' : 'var(--fail)')
+        : 'var(--muted)';
+
+      // Token / cost from outer API response
+      const llmMeta2 = outerMeta?.llm_response || outerMeta?.llm_analysis || {};
+      const totalTok2 = llmMeta2.total_tokens ?? llmMeta2.usage?.total_tokens ?? null;
+      const rawCost2 = llmMeta2.cost ?? null;
+      const costMeta2 = formatCostUsd(rawCost2);
+      const costDisp2 = costMeta2?.text ?? '—';
+      const isFree2 = costMeta2?.isFree ?? false;
+
+      const canvasId = `canvas-block-${Date.now()}`;
+
+      let html = '';
+
+      // ── Canvas with bounding boxes ──
+      html += `
+    <div class="block-canvas-wrap" id="wrap-${canvasId}">
+      <canvas id="${canvasId}"></canvas>
+      <div class="canvas-overlay">
+        <button class="canvas-action-btn" onclick="openLightbox('${canvasId}', '${modelId.replace(/'/g, '')}')" title="Enlarge">
+          🔍 Enlarge
+        </button>
+        <button class="canvas-action-btn" onclick="downloadCanvas('${canvasId}', '${modelId.replace(/'/g, '').replace(/\//g, '-')}')" title="Download">
+          ⬇ Download
+        </button>
+      </div>
+    </div>`;
+
+      // ── Score stats ──
+      html += `
+    <div class="block-score-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
+      <div class="mini-stat">
+        <div class="mini-stat-num" style="color:${scoreColor}">${score}</div>
+        <div class="mini-stat-lbl">Health</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-num">${data.total_items ?? items.length}</div>
+        <div class="mini-stat-lbl">Items</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-num" style="color:${alerts.length ? 'var(--fail)' : 'var(--pass)'}">${data.spoilage_alert_count ?? 0}</div>
+        <div class="mini-stat-lbl">Alerts</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-num" style="color:#a78bfa;font-size:16px">${totalTok2 !== null ? totalTok2.toLocaleString() : '—'}</div>
+        <div class="mini-stat-lbl">Tokens</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-num" style="color:${isFree2 ? 'var(--pass)' : 'var(--warn)'};font-size:16px">${costDisp2}</div>
+        <div class="mini-stat-lbl">Cost</div>
+      </div>
+    </div>`;
+
+      if (alerts.length) {
+        html += `<div class="block-alerts">
+      <div class="block-alerts-title">⚠ Alerts</div>
+      ${alerts.map(a => `• ${a}`).join('<br>')}
+    </div>`;
+      }
+
+      if (items.length) {
+        html += `<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px">Detected Items</div>
+    <div class="block-items-list">`;
+        items.forEach((item, idx) => {
+          const q = item.quality_rating ?? 0;
+          const cls = item.is_spoiling ? 'mb-fail' : q >= 7 ? 'mb-pass' : q >= 5 ? 'mb-warn' : 'mb-fail';
+          const lbl = item.is_spoiling ? '⚠ SPOILING' : q >= 7 ? '✓ FRESH' : q >= 5 ? '~ AGING' : '✗ POOR';
+          const barColor = item.is_spoiling ? '#ef4444' : q >= 7 ? 'var(--pass)' : q >= 5 ? 'var(--warn)' : 'var(--fail)';
+          html += `<div class="mini-item" style="cursor:default">
+        <span style="min-width:18px;height:18px;border-radius:50%;background:${barColor};color:#000;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx + 1}</span>
+        <span class="mini-item-name">${item.item_name}</span>
+        <span style="font-size:10px;color:var(--muted);margin-right:4px">Q:${q}/10</span>
+        <span class="mini-badge ${cls}">${lbl}</span>
+      </div>`;
+        });
+        html += `</div>`;
+      }
+
+      // Raw JSON toggle
+      html += `
+    <details style="margin-top:4px">
+      <summary style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none">▸ Raw Response</summary>
+      <div class="block-raw">${escapeHtml(JSON.stringify(data, null, 2))}</div>
+    </details>`;
+
+      bodyEl.innerHTML = html;
+
+      // Draw canvas after DOM update
+      requestAnimationFrame(() => {
+        const canvas = document.getElementById(canvasId);
+        if (canvas && originalImage.complete && originalImage.naturalWidth) {
+          drawBlockCanvas(canvas, items);
+        } else if (canvas) {
+          originalImage.onload = () => drawBlockCanvas(canvas, items);
+        }
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ── Lightbox ─────────────────────────────────────────────
+    let lightboxSourceId = null;
+
+    function openLightbox(canvasId, modelLabel) {
+      const src = document.getElementById(canvasId);
+      if (!src) return;
+      lightboxSourceId = canvasId;
+
+      const lb = document.getElementById('lightboxCanvas');
+      lb.width = src.width;
+      lb.height = src.height;
+      const ctx = lb.getContext('2d');
+      ctx.drawImage(src, 0, 0);
+
+      document.getElementById('lightboxTitle').textContent = modelLabel || 'Model Result';
+      document.getElementById('lightbox').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(e) {
+      if (e && e.target !== document.getElementById('lightbox')) return;
+      document.getElementById('lightbox').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function downloadLightbox() {
+      const lb = document.getElementById('lightboxCanvas');
+      const title = document.getElementById('lightboxTitle').textContent
+        .replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      downloadCanvasEl(lb, `analysis-${title}-${Date.now()}.png`);
+    }
+
+    function downloadCanvas(canvasId, modelSlug) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      downloadCanvasEl(canvas, `analysis-${modelSlug}-${Date.now()}.png`);
+    }
+
+    function downloadCanvasEl(canvas, filename) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Close lightbox on Escape key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.getElementById('lightbox').classList.remove('show');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // ── Run All Models ────────────────────────────────────────
+    async function runAll() {
+      if (!selectedFile) { alert('Please upload an image first.'); return; }
+      if (blocks.length === 0) { alert('No model blocks added. Click "Add Model" first.'); return; }
+
+      document.getElementById('loader').classList.add('show');
+      document.getElementById('runAllBtn').disabled = true;
+
+      // run in parallel
+      await Promise.allSettled(blocks.map(b => runBlock(b.id)));
+
+      document.getElementById('loader').classList.remove('show');
+      document.getElementById('runAllBtn').disabled = false;
+    }
+
+    // Initialize default view
+    initCompare();
+  </script>
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox" onclick="closeLightbox(event)">
+    <div class="lightbox-bar" onclick="event.stopPropagation()">
+      <span class="lightbox-title" id="lightboxTitle">Model Result</span>
+      <button class="lightbox-btn" onclick="downloadLightbox()">⬇ Download PNG</button>
+      <button class="lightbox-btn close-btn" onclick="closeLightbox()">✕ Close</button>
+    </div>
+    <canvas id="lightboxCanvas" onclick="event.stopPropagation()"></canvas>
+  </div>
+
+</body>
+
+</html>

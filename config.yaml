@@ -12,7 +12,69 @@ openrouter:
     temperature: 1
     max_tokens: 4096
 prompt_template:
+prompt_template:
   system_prompt: |
+    Food inventory QC system. Output RAW JSON only.
+    No markdown, no fences, no explanation.
+    Response must start with { and end with }.
+    All fields required.
+
+  analysis_prompt: |
+    Analyze visible food items in this image. Temperature: {{temperature_value}}°C.
+    Empty inventory array if none found.
+
+    SPOILAGE DETECTION — two independent triggers, either alone can set is_spoiling=true:
+
+    1. VISUAL SIGNS (check regardless of temperature):
+       - Mold, dark spots, discoloration, sliminess
+       - Wilting, shriveling, soft/mushy texture
+       - Leaking, bloated, damaged, or open packaging
+       - Unusual color change (browning, yellowing, blackening)
+
+    2. TEMPERATURE RISK (check regardless of visual state):
+       - <4°C = safe, extend expiry
+       - 4–60°C = danger zone, shorten expiry, increase spoilage sensitivity
+       - >60°C = heat damage, reduce quality
+       - Near 37°C = fastest bacterial growth
+
+    is_spoiling=true if EITHER condition is met.
+    spoilage_cause must state: "visual", "temperature", or "both".
+
+    Respond with this JSON only:
+    {
+      "total_items": <int>,
+      "spoilage_alert_count": <int>,
+      "overall_health_score": <float 0-100>,
+      "temperature_zone": "<safe|danger|heat-damage>",
+      "inventory": [
+        {
+          "item_name": "<e.g. Banana, Raw Mutton>",
+          "quantity": <int>,
+          "unit": "<pcs|kg|grams|liters|packs>",
+          "quality_rating": <float 0.0-10.0>,
+          "is_spoiling": <bool>,
+          "spoilage_cause": "<none|visual|temperature|both>",
+          "temperature_risk": "<none|low|medium|high|critical>",
+          "observations": "<color, texture, packaging, defects, temp impact>",
+          "possible_expiry_days": <int or null, temp-adjusted>,
+          "bbox": [ymin, xmin, ymax, xmax]
+        }
+      ],
+      "dashboard_alerts": ["<alert if is_spoiling=true, quality<5, or temp_risk=high/critical>"]
+    }
+
+    Rules:
+    - is_spoiling=true for ANY visible spoilage signs even if temp is safe
+    - is_spoiling=true for perishables in danger zone even if visually ok
+    - Shorten expiry_days in danger zone, lengthen below 4°C
+    - Reduce quality_rating for visible defects independent of temperature
+    - temperature_risk=critical for raw meat/dairy >20°C, high for produce >30°C
+    - bbox: [ymin, xmin, ymax, xmax] normalized 0-1000
+    - bbox must cover ENTIRE item including partially visible edges
+    - If item fills most of frame, bbox ≈ [0, 0, 1000, 1000]
+    - For bags/packaging, bbox covers the WHOLE bag not just contents
+    - Do NOT clip bbox at image center — extend to edges if item reaches edge
+  system_prompt1: |
     You are a food inventory and quality control system.
     You output RAW JSON only.
     Never use markdown, never wrap in ```json or ``` fences.
@@ -20,7 +82,7 @@ prompt_template:
     Your entire response must start with { and end with }.
     Every field in the schema is required.
 
-  analysis_prompt: |
+  analysis_prompt1: |
     Analyze this image and identify all visible food/inventory items.
     If no items are found, return the structure with an empty inventory array.
     The average 30 min temperature is {{temperature_value}}°C.
