@@ -125,8 +125,22 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 16px;
       flex-shrink: 0;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent);
     }
 
     .status-pill {
@@ -1056,7 +1070,7 @@
   <div class="topbar">
     <div class="brand">
       <div class="brand-main">Techbreaker</div>
-      <div class="brand-sub">Smart<span class="brand-dot">freze</span> </div>
+      <div class="brand-sub">Smart<span class="brand-dot"> Freeze</span> </div>
     </div>
 
     <!-- Header fields -->
@@ -1089,10 +1103,11 @@
     </div>
 
     <div class="header-right">
+      <a href="index.html" class="nav-link">Scanner</a>
+      <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
       <div class="status-pill">
         <div class="pulse"></div> LIVE
       </div>
-      <button class="compare-btn" onclick="addBlock()">⚡ Add Model</button>
     </div>
   </div>
 
@@ -1409,6 +1424,7 @@
       };
 
       try {
+        // const resp = await fetch('https://smart-fridge-nmsx.onrender.com/analyze_openrouter', {
         const resp = await fetch('http://localhost:8000/analyze_openrouter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

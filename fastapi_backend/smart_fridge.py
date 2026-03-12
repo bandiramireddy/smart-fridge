@@ -25,6 +25,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include data retrieval endpoints
+# from fastapi_backend.get_data import router as data_router
+# app.include_router(data_router)
     
 @app.get("/")
 def read_root():
@@ -266,6 +270,31 @@ async def analyze_image_openrouter(payload: ImagePayload, request: Request):
         },
         "llm_response": llm_response
     }
+from fastapi import APIRouter, Query
+from db.db_operations import get_dashboard_inventory, get_image_by_log_id, get_dashboard_inventory_with_images
+
+# router = APIRouter()
+
+@app.get("/dashboard/inventory")
+async def fetch_inventory(limit: int = Query(10, description="Number of rows to return")):
+    """
+    Fetch dashboard inventory items including image_data from Databricks.
+    Tries the JOIN query first (view + raw table); falls back to view-only on error.
+    """
+    result = get_dashboard_inventory_with_images(limit=limit)
+    return result
+
+
+@app.get("/dashboard/image/{log_id}")
+async def fetch_image(log_id: str):
+    """
+    Fetch the base64 image for a single log entry by its log_id.
+    Used by the dashboard to lazy-load images without embedding in the inventory payload.
+    """
+    result = get_image_by_log_id(log_id)
+    return result
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="localhost", port=8000)

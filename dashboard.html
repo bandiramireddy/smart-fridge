@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Freeze | Food Analytics Dashboard</title>
+    <meta name="description"
+        content="Smart Fridge visual food analysis dashboard — real-time quality scores, spoilage alerts and LLM cost tracking.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #07090e;
+            --surf: #0d1017;
+            --surf2: #131720;
+            --surf3: #1a2030;
+            --border: #1e2637;
+            --accent: #6366f1;
+            --accent-l: rgba(99, 102, 241, 0.12);
+            --green: #10b981;
+            --green-l: rgba(16, 185, 129, 0.12);
+            --amber: #f59e0b;
+            --amber-l: rgba(245, 158, 11, 0.12);
+            --red: #ef4444;
+            --red-l: rgba(239, 68, 68, 0.12);
+            --sky: #38bdf8;
+            --text: #edf0f7;
+            --text2: #94a3b8;
+            --radius: 14px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 28px;
+            background: rgba(13, 16, 23, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #6366f1, #38bdf8);
+            display: grid;
+            place-items: center;
+            font-size: 17px;
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: -.3px;
+        }
+
+        .brand-tag {
+            font-size: 10px;
+            color: var(--text2);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav a {
+            color: var(--text2);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 8px;
+            transition: .2s;
+        }
+
+        .nav a:hover {
+            color: var(--text);
+            background: var(--surf2);
+        }
+
+        .nav a.active {
+            color: var(--accent);
+            background: var(--accent-l);
+        }
+
+        .live-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 13px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--green-l);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, .2);
+        }
+
+        .pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: .5;
+                transform: scale(.75)
+            }
+        }
+
+        /* ── LAYOUT ── */
+        .wrap {
+            max-width: 1460px;
+            margin: 0 auto;
+            padding: 28px 24px 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 26px;
+        }
+
+        /* ── PAGE HEADER ── */
+        .page-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .page-head h1 {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: -.5px;
+            background: linear-gradient(90deg, #e0e7ff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-head p {
+            color: var(--text2);
+            font-size: 13px;
+            margin-top: 3px;
+        }
+
+        /* ── CONTROLS ── */
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            padding: 16px 18px;
+            border-radius: var(--radius);
+            background: var(--surf);
+            border: 1px solid var(--border);
+        }
+
+        .cg {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .cg label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text2);
+            font-weight: 600;
+        }
+
+        .cg select,
+        .cg input {
+            background: var(--surf2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 13px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            outline: none;
+            transition: .2s;
+            cursor: pointer;
+        }
+
+        .cg select:focus,
+        .cg input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+        }
+
+        .search-input {
+            min-width: 220px;
+        }
+
+        .btn {
+            padding: 9px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #6366f1, #38bdf8);
+            transition: .2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 18px rgba(99, 102, 241, .3);
+        }
+
+        /* ── KPI CARDS ── */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        @media(max-width:1000px) {
+            .kpi-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media(max-width:600px) {
+            .kpi-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: transform .3s cubic-bezier(.175, .885, .32, 1.275), border-color .2s;
+        }
+
+        .kpi:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, .3);
+        }
+
+        .kpi-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .kpi-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+        }
+
+        .kpi-label {
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text2);
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text2);
+        }
+
+        /* ── SECTION ROW ── */
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 3px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--accent);
+        }
+
+        /* ── CHART GRID ── */
+        .charts-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .charts-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media(max-width:1100px) {
+
+            .charts-2,
+            .charts-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: border-color .2s;
+        }
+
+        .chart-card:hover {
+            border-color: rgba(99, 102, 241, .2);
+        }
+
+        .chart-body {
+            flex: 1;
+            position: relative;
+            min-height: 260px;
+        }
+
+        /* ── GAUGE ── */
+        .gauge-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 4px;
+            padding: 20px 0;
+        }
+
+        .gauge-val {
+            font-size: 44px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .gauge-lbl {
+            font-size: 11px;
+            color: var(--text2);
+        }
+
+        /* ── FOOD TABLE ── */
+        .table-wrap {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .table-head-bar {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .tbl th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 9.5px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text2);
+            font-weight: 700;
+            background: var(--surf2);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+            transition: .15s;
+            white-space: nowrap;
+        }
+
+        .tbl th:hover {
+            color: var(--accent);
+        }
+
+        .tbl th .si {
+            opacity: .3;
+            font-size: 9px;
+            margin-left: 3px;
+        }
+
+        .tbl td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(30, 38, 55, .6);
+            vertical-align: middle;
+            transition: .15s;
+        }
+
+        .tbl tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tbl tbody tr:hover td {
+            background: rgba(99, 102, 241, .025);
+        }
+
+        /* ── Food image thumbnail ── */
+        .thumb-wrap {
+            width: 58px;
+            height: 58px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .thumb {
+            width: 58px;
+            height: 58px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: border-color .2s, transform .2s;
+            display: block;
+        }
+
+        .thumb:hover {
+            border-color: var(--accent);
+            transform: scale(1.08);
+        }
+
+        .no-img {
+            width: 58px;
+            height: 58px;
+            border-radius: 10px;
+            background: var(--surf3);
+            border: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: default;
+        }
+
+        .no-img span:first-child {
+            font-size: 22px;
+        }
+
+        .no-img span:last-child {
+            font-size: 8px;
+            color: var(--text2);
+            letter-spacing: 1px;
+        }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 11px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .badge::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+        }
+
+        .b-fresh {
+            background: var(--green-l);
+            color: var(--green);
+        }
+
+        .b-fresh::before {
+            background: var(--green);
+        }
+
+        .b-aging {
+            background: var(--amber-l);
+            color: var(--amber);
+        }
+
+        .b-aging::before {
+            background: var(--amber);
+        }
+
+        .b-poor {
+            background: var(--red-l);
+            color: var(--red);
+        }
+
+        .b-poor::before {
+            background: var(--red);
+        }
+
+        .b-risk-h {
+            background: var(--red-l);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, .25);
+        }
+
+        .b-risk-l {
+            background: var(--green-l);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, .25);
+        }
+
+        /* quality bar */
+        .qbar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qbar {
+            width: 70px;
+            height: 6px;
+            background: var(--surf3);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .qbar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width .6s ease;
+        }
+
+        /* ── LIGHTBOX ── */
+        .lb-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(5, 7, 11, .92);
+            backdrop-filter: blur(12px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lb-overlay.open {
+            display: flex;
+        }
+
+        .lb-inner {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        .lb-img {
+            max-width: 90vw;
+            max-height: 85vh;
+            border-radius: 14px;
+            object-fit: contain;
+            border: 2px solid var(--border);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, .7);
+        }
+
+        .lb-caption {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text2);
+        }
+
+        .lb-close {
+            position: absolute;
+            top: -14px;
+            right: -14px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            background: var(--surf3);
+            color: var(--text);
+            font-size: 18px;
+            line-height: 34px;
+            text-align: center;
+            transition: .2s;
+        }
+
+        .lb-close:hover {
+            background: var(--red);
+        }
+
+        /* ── Loading overlay ── */
+        .loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(7, 9, 14, .8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            border-radius: var(--radius);
+            backdrop-filter: blur(6px);
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            padding: 13px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            backdrop-filter: blur(12px);
+            animation: slideUp .35s ease;
+            max-width: 380px;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .anim {
+            animation: fadeIn .45s ease both;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <a href="index.html" class="brand">
+            <div class="brand-icon">❄️</div>
+            <div>
+                <div class="brand-name">Techbreaker</div>
+                <div class="brand-tag">Smart Freeze</div>
+            </div>
+        </a>
+        <div class="nav">
+            <a href="index.html">Scanner</a>
+            <a href="index_openrouter.html">Advanced</a>
+            <a href="dashboard.html" class="active">Dashboard</a>
+        </div>
+        <div class="live-dot">
+            <div class="pulse"></div>Live
+        </div>
+    </div>
+
+    <!-- LIGHTBOX -->
+    <div class="lb-overlay" id="lightbox" onclick="closeLB(event)">
+        <div class="lb-inner">
+            <button class="lb-close" onclick="closeLB()">✕</button>
+            <img class="lb-img" id="lbImg" src="" alt="">
+            <div class="lb-caption" id="lbCaption"></div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="wrap">
+
+        <!-- Header -->
+        <div class="page-head">
+            <div>
+                <h1>Food Analysis Dashboard</h1>
+                <p>Computer vision inspection — quality scores, spoilage detection & cost tracking</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="cg">
+                <label>Date Filter</label>
+                <input type="date" id="dateFilter" onchange="applyFilters()">
+            </div>
+            <div class="cg">
+                <label>Rows</label>
+                <select id="limitSelect" onchange="loadData()">
+                    <option value="10">10 Rows</option>
+                    <option value="20" selected>20 Rows</option>
+                    <option value="50">50 Rows</option>
+                    <option value="100">100 Rows</option>
+                </select>
+            </div>
+            <div class="cg">
+                <label>Model</label>
+                <select id="modelFilter" onchange="applyFilters()">
+                    <option value="all">All Models</option>
+                </select>
+            </div>
+            <div class="cg">
+                <label>Search</label>
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍  Filter items…"
+                    oninput="applyFilters()">
+            </div>
+            <div class="cg" style="justify-content:flex-end">
+                <label>&nbsp;</label>
+                <button class="btn" onclick="loadData()">⟳ Refresh</button>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-row">
+            <div class="kpi anim">
+                <div class="kpi-bar" style="background:linear-gradient(90deg,#38bdf8,#6366f1)"></div>
+                <div class="kpi-icon" style="background:rgba(56,189,248,.12); font-size:20px">🍽️</div>
+                <div class="kpi-label">Food Items Scanned</div>
+                <div class="kpi-value" id="kpiItems" style="color:var(--sky)">—</div>
+                <div class="kpi-sub">across current filter</div>
+            </div>
+            <div class="kpi anim" style="animation-delay:.06s">
+                <div class="kpi-bar" style="background:linear-gradient(90deg,#10b981,#38bdf8)"></div>
+                <div class="kpi-icon" style="background:var(--green-l); font-size:20px">💚</div>
+                <div class="kpi-label">Avg Quality Score</div>
+                <div class="kpi-value" id="kpiHealth" style="color:var(--green)">—</div>
+                <div class="kpi-sub">overall fridge health</div>
+            </div>
+            <div class="kpi anim" style="animation-delay:.12s">
+                <div class="kpi-bar" style="background:linear-gradient(90deg,#ef4444,#f59e0b)"></div>
+                <div class="kpi-icon" style="background:var(--red-l); font-size:20px">🚨</div>
+                <div class="kpi-label">Critical Alerts</div>
+                <div class="kpi-value" id="kpiAlerts" style="color:var(--red)">—</div>
+                <div class="kpi-sub">spoiling or critical items</div>
+            </div>
+            <div class="kpi anim" style="animation-delay:.18s">
+                <div class="kpi-bar" style="background:linear-gradient(90deg,#6366f1,#c084fc)"></div>
+                <div class="kpi-icon" style="background:var(--accent-l); font-size:20px">💰</div>
+                <div class="kpi-label">LLM Cost</div>
+                <div class="kpi-value" id="kpiCost" style="color:var(--accent)">—</div>
+                <div class="kpi-sub" id="kpiTokens">— tokens used</div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1: Cost by Model + Quality Doughnut -->
+        <div class="charts-2">
+            <div class="chart-card">
+                <div class="section-title">Cost by Model</div>
+                <div class="chart-body"><canvas id="costChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="section-title">Quality Distribution</div>
+                <div class="chart-body"><canvas id="qualChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Health Gauge + Scan Timeline -->
+        <div class="charts-2">
+            <div class="chart-card">
+                <div class="section-title">Health Gauge</div>
+                <div class="chart-body">
+                    <div class="gauge-wrap">
+                        <svg width="200" height="120" viewBox="0 0 200 120">
+                            <path d="M20 105 A80 80 0 0 1 180 105" fill="none" stroke="var(--surf3)" stroke-width="16"
+                                stroke-linecap="round" />
+                            <path id="gaugeArc" d="M20 105 A80 80 0 0 1 180 105" fill="none" stroke="url(#gGrad)"
+                                stroke-width="16" stroke-linecap="round" stroke-dasharray="0 251.33" />
+                            <defs>
+                                <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#ef4444" />
+                                    <stop offset="50%" stop-color="#f59e0b" />
+                                    <stop offset="100%" stop-color="#10b981" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="gauge-val" id="gaugeVal">—</div>
+                        <div class="gauge-lbl">avg quality / 10</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="section-title">Scan Timeline</div>
+                <div class="chart-body"><canvas id="timeChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- FOOD INVENTORY TABLE — PRIMARY FOCUS -->
+        <div>
+            <div class="section-title" style="margin-bottom:14px">Food Inventory — Visual Analysis</div>
+            <div class="table-wrap">
+                <div id="tableLoading" class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <div class="table-head-bar">
+                    <span style="font-size:12px; color:var(--text2)">Showing <strong id="rowCount"
+                            style="color:var(--text)">0</strong> records</span>
+                    <span style="font-size:11px; color:var(--text2)">Click image to enlarge · Click column header to
+                        sort</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="tbl">
+                        <thead>
+                            <tr>
+                                <th>📷 Image</th>
+                                <th onclick="sortBy('item_name')">Item <span class="si">▼</span></th>
+                                <th onclick="sortBy('quality_rating')">Quality <span class="si">▼</span></th>
+                                <th onclick="sortBy('overall_health_score')">Health Score <span class="si">▼</span></th>
+                                <th onclick="sortBy('stock_status')">Freshness <span class="si">▼</span></th>
+                                <th onclick="sortBy('temperature_risk')">Temp Risk <span class="si">▼</span></th>
+                                <th onclick="sortBy('is_spoiling')">Spoiling <span class="si">▼</span></th>
+                                <th onclick="sortBy('model')">Model <span class="si">▼</span></th>
+                                <th onclick="sortBy('cost')">Cost <span class="si">▼</span></th>
+                                <th onclick="sortBy('created_timestamp')">Scanned <span class="si">▼</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /wrap -->
+
+    <script>
+        /* ──────────────────────────────────────────── */
+        /*  STATE                                       */
+        /* ──────────────────────────────────────────── */
+        let allData = [];
+        let filtered = [];
+        let sortCol = null;
+        let sortAsc = true;
+        let costChartInst = null, qualChartInst = null, timeChartInst = null;
+        // imageCache[i] holds the resolved data-URI for row i (avoids embedding in HTML)
+        let imageCache = [];
+
+        /* ──────────────────────────────────────────── */
+        /*  BASE64 UTILITIES                            */
+        /* ──────────────────────────────────────────── */
+        /**
+         * Given a raw base64 string, detect MIME type from magic bytes
+         * and return a proper data-URI for use in <img src="...">.
+         */
+        function base64ToDataURI(b64) {
+            if (!b64 || typeof b64 !== 'string') return null;
+
+            // Strip any data-URI prefix the backend might already include
+            if (b64.startsWith('data:')) return b64;
+
+            // Detect MIME from first bytes
+            const head = b64.substring(0, 12);
+            let mime = 'image/jpeg'; // safe default
+            if (head.startsWith('iVBORw0')) mime = 'image/png';
+            else if (head.startsWith('UklGR')) mime = 'image/webp';
+            else if (head.startsWith('R0lGO')) mime = 'image/gif';
+            else if (head.startsWith('/9j/')) mime = 'image/jpeg';
+
+            return `data:${mime};base64,${b64}`;
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  LIGHTBOX                                    */
+        /* ──────────────────────────────────────────── */
+        function openLB(src, caption) {
+            document.getElementById('lbImg').src = src;
+            document.getElementById('lbCaption').textContent = caption || '';
+            document.getElementById('lightbox').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeLB(e) {
+            if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('lb-close')) return;
+            document.getElementById('lightbox').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.getElementById('lightbox').classList.remove('open'); document.body.style.overflow = ''; } });
+
+        /* ──────────────────────────────────────────── */
+        /*  FETCH                                       */
+        /* ──────────────────────────────────────────── */
+        async function loadData() {
+            const limit = document.getElementById('limitSelect').value;
+            setLoading(true);
+            try {
+                const res = await fetch(`http://localhost:8000/dashboard/inventory?limit=${limit}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    allData = json.data || [];
+                    buildModelFilter();
+                    applyFilters();
+                } else {
+                    toast(json.message || 'Backend error', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                toast('Could not reach backend. Is FastAPI running on :8000?', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(on) {
+            document.getElementById('tableLoading').style.display = on ? 'flex' : 'none';
+        }
+
+        function buildModelFilter() {
+            const models = [...new Set(allData.map(d => d.model).filter(Boolean))];
+            const sel = document.getElementById('modelFilter');
+            const cur = sel.value;
+            sel.innerHTML = '<option value="all">All Models</option>';
+            models.forEach(m => {
+                const o = document.createElement('option');
+                o.value = m;
+                o.textContent = m.includes('/') ? m.split('/').pop() : m;
+                sel.appendChild(o);
+            });
+            sel.value = cur;
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  FILTERS                                     */
+        /* ──────────────────────────────────────────── */
+        function applyFilters() {
+            const dateVal = document.getElementById('dateFilter').value;
+            const modelVal = document.getElementById('modelFilter').value;
+            const q = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            filtered = allData.filter(item => {
+                if (dateVal) {
+                    try {
+                        const d = new Date(item.created_timestamp).toISOString().split('T')[0];
+                        if (d !== dateVal) return false;
+                    } catch { return false; }
+                }
+                if (modelVal !== 'all' && item.model !== modelVal) return false;
+                if (q) {
+                    const hay = `${item.item_name || ''} ${item.machine_id || ''} ${item.stock_status || ''} ${item.temperature_risk || ''}`.toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+
+            if (sortCol) doSort();
+            render();
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  SORT                                        */
+        /* ──────────────────────────────────────────── */
+        function sortBy(col) {
+            if (sortCol === col) sortAsc = !sortAsc;
+            else { sortCol = col; sortAsc = true; }
+            doSort();
+            renderTable();
+        }
+        function doSort() {
+            filtered.sort((a, b) => {
+                let va = a[sortCol], vb = b[sortCol];
+                if (va == null) va = '';
+                if (vb == null) vb = '';
+                if (typeof va === 'boolean') va = va ? 1 : 0;
+                if (typeof vb === 'boolean') vb = vb ? 1 : 0;
+                const n = parseFloat(va), m = parseFloat(vb);
+                if (!isNaN(n) && !isNaN(m)) return sortAsc ? n - m : m - n;
+                return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+            });
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  RENDER ALL                                  */
+        /* ──────────────────────────────────────────── */
+        function render() {
+            updateKPIs();
+            updateGauge();
+            renderTable();
+            renderCharts();
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  KPIs                                        */
+        /* ──────────────────────────────────────────── */
+        function updateKPIs() {
+            const n = filtered.length;
+            const avgQ = n > 0 ? (filtered.reduce((s, d) => s + Number(d.quality_rating || 0), 0) / n).toFixed(1) : '—';
+            const cost = filtered.reduce((s, d) => s + Number(d.cost || 0), 0);
+            const tok = filtered.reduce((s, d) => s + Number(d.total_tokens || 0), 0);
+            const alerts = filtered.filter(d => d.stock_status === 'CRITICAL' || d.is_spoiling === true || d.is_spoiling === 1).length;
+
+            animNum('kpiItems', n);
+            animNum('kpiHealth', parseFloat(avgQ) || 0, 1);
+            animNum('kpiAlerts', alerts);
+            document.getElementById('kpiCost').textContent = '$' + cost.toFixed(4);
+            document.getElementById('kpiTokens').textContent = tok.toLocaleString() + ' tokens used';
+        }
+
+        function animNum(id, end, dec = 0) {
+            const el = document.getElementById(id);
+            const start = parseFloat(el.textContent) || 0;
+            const t0 = performance.now(), dur = 700;
+            function tick(now) {
+                const p = Math.min((now - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+                el.textContent = (start + (end - start) * e).toFixed(dec);
+                if (p < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  GAUGE                                       */
+        /* ──────────────────────────────────────────── */
+        function updateGauge() {
+            const n = filtered.length;
+            const avg = n > 0 ? filtered.reduce((s, d) => s + Number(d.quality_rating || 0), 0) / n : 0;
+            const pct = Math.min(avg / 10, 1);
+            const arc = pct * 251.33;
+            const el = document.getElementById('gaugeArc');
+            el.style.transition = 'stroke-dasharray 1s ease';
+            el.setAttribute('stroke-dasharray', `${arc} 251.33`);
+            const vEl = document.getElementById('gaugeVal');
+            vEl.textContent = n > 0 ? avg.toFixed(1) : '—';
+            vEl.style.color = avg >= 7 ? 'var(--green)' : avg >= 4 ? 'var(--amber)' : 'var(--red)';
+        }
+
+        /* ────────────────────────────────────────────────── */
+        /*  TABLE                                             */
+        /* ────────────────────────────────────────────────── */
+        function renderTable() {
+            const tbody = document.getElementById('tblBody');
+            document.getElementById('rowCount').textContent = filtered.length;
+            imageCache = [];
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:50px;color:var(--text2)">No records match the current filters.</td></tr>';
+                return;
+            }
+
+            // DEBUG — open DevTools console to see what fields the API returns
+            const sample = filtered[0];
+            console.log('[Dashboard] keys:', Object.keys(sample).join(', '));
+            console.log('[Dashboard] log_id:', sample.log_id);
+            console.log('[Dashboard] image_data len:', (sample.image_data||'').length, '| prefix:', (sample.image_data||'').substring(0,30));
+
+            // STEP 1: Build HTML skeleton — NO base64 inline anywhere
+            tbody.innerHTML = filtered.map(function(item, i) {
+                var q        = Number(item.quality_rating || 0);
+                var qPct     = q * 10;
+                var qColor   = q >= 7 ? 'var(--green)' : q >= 4 ? 'var(--amber)' : 'var(--red)';
+                var freshCls = q >= 7 ? 'b-fresh' : q >= 4 ? 'b-aging' : 'b-poor';
+                var freshTxt = q >= 7 ? 'Fresh'   : q >= 4 ? 'Aging'   : 'Poor';
+                var risk     = (item.temperature_risk || '').toLowerCase();
+                var riskCls  = risk === 'high' ? 'b-risk-h' : 'b-risk-l';
+                var riskTxt  = risk || 'Normal';
+                var spoiling = item.is_spoiling === true || item.is_spoiling === 1;
+                var modelRaw = item.model || '';
+                var modelShort = modelRaw.includes('/') ? modelRaw.split('/').pop() : (modelRaw || '\u2014');
+                var ts   = item.created_timestamp ? new Date(item.created_timestamp).toLocaleString() : '\u2014';
+                var hs   = Number(item.overall_health_score || 0);
+                var hsColor = hs >= 7 ? 'var(--green)' : hs >= 4 ? 'var(--amber)' : 'var(--red)';
+                var name = (item.item_name || '').replace(/"/g, '&quot;');
+
+                // Pre-build data URI if image already in payload; store in cache
+                var rawB64  = item.image_data || null;
+                var dataURI = rawB64 ? base64ToDataURI(rawB64) : null;
+                imageCache[i] = { uri: dataURI, logId: item.log_id || null, label: (item.item_name || 'Item') + ' \u2014 ' + ts };
+
+                // img placeholder — src injected after innerHTML (safe for large base64)
+                var imgCell = '<img class="thumb" data-index="' + i + '" alt="' + name + '" style="opacity:0;transition:opacity .4s">';
+
+                return '<tr data-index="' + i + '" style="animation:fadeIn .3s ease ' + (i*0.025) + 's both">'
+                    + '<td>' + imgCell + '</td>'
+                    + '<td style="font-weight:700;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + name + '">' + (item.item_name || 'N/A') + '</td>'
+                    + '<td><div class="qbar-wrap"><div class="qbar"><div class="qbar-fill" style="width:' + qPct + '%;background:' + qColor + ';box-shadow:0 0 8px ' + qColor + '55"></div></div><span style="font-family:\'JetBrains Mono\';font-size:12px;font-weight:700;color:' + qColor + '">' + q + '/10</span></div></td>'
+                    + '<td style="font-weight:700;color:' + hsColor + '">' + hs.toFixed(1) + '</td>'
+                    + '<td><span class="badge ' + freshCls + '">' + freshTxt + '</span></td>'
+                    + '<td><span class="badge ' + riskCls + '">' + riskTxt + '</span></td>'
+                    + '<td style="text-align:center">' + (spoiling ? '<span style="color:var(--red);font-size:18px">\u26a0\ufe0f</span>' : '<span style="color:var(--green);font-size:14px">\u2713</span>') + '</td>'
+                    + '<td style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;max-width:110px;text-overflow:ellipsis" title="' + modelRaw + '">' + modelShort + '</td>'
+                    + '<td style="font-family:\'JetBrains Mono\';font-size:11px;color:var(--text2)">$' + Number(item.cost||0).toFixed(5) + '</td>'
+                    + '<td style="font-size:11px;color:var(--text2);white-space:nowrap">' + ts + '</td>'
+                    + '</tr>';
+            }).join('');
+
+            // STEP 2: After DOM is ready, set img.src from imageCache (never via innerHTML)
+            tbody.querySelectorAll('img[data-index]').forEach(function(img) {
+                var idx   = parseInt(img.dataset.index, 10);
+                var entry = imageCache[idx];
+                if (!entry) { showNoImg(img); return; }
+
+                function applyURI(uri) {
+                    if (!uri) { showNoImg(img); return; }
+                    entry.uri = uri;
+                    img.onload  = function() { img.style.opacity = '1'; };
+                    img.onerror = function() { console.warn('[Img error] idx=' + idx + ' prefix=' + uri.substring(0,50)); showNoImg(img); };
+                    img.onclick = function() { openLBByIndex(idx); };
+                    img.style.cursor = 'zoom-in';
+                    img.src = uri;  // triggers load — always set LAST
+                }
+
+                if (entry.uri) {
+                    // image_data already in payload (JOIN succeeded)
+                    applyURI(entry.uri);
+                } else if (entry.logId) {
+                    // Lazy-fetch from /dashboard/image/{log_id}
+                    img.style.opacity = '0.15';
+                    fetch('http://localhost:8000/dashboard/image/' + entry.logId)
+                        .then(function(r) { return r.json(); })
+                        .then(function(result) {
+                            if (result.status === 'success' && result.image_data) {
+                                applyURI(base64ToDataURI(result.image_data));
+                            } else {
+                                showNoImg(img);
+                            }
+                        })
+                        .catch(function() { showNoImg(img); });
+                } else {
+                    showNoImg(img);
+                }
+            });
+        }
+
+        function showNoImg(img) {
+            var d = document.createElement('div');
+            d.className = 'no-img';
+            d.innerHTML = '<span>\ud83c\udf7d\ufe0f</span><span>No img</span>';
+            img.replaceWith(d);
+        }
+
+        function openLBByIndex(idx) {
+            var entry = imageCache[idx];
+            if (!entry || !entry.uri) return;
+            document.getElementById('lbImg').src = entry.uri;
+            document.getElementById('lbCaption').textContent = entry.label || '';
+            document.getElementById('lightbox').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        /* ──────────────────────────────────────────── */
+        /*  CHARTS                                      */
+        /* ──────────────────────────────────────────── */
+        const TT = {
+            backgroundColor: '#0d1017', titleFont: { family: 'Inter', size: 12, weight: '700' },
+            bodyFont: { family: 'JetBrains Mono', size: 11 }, borderColor: '#1e2637',
+            borderWidth: 1, padding: 13, cornerRadius: 10, displayColors: true
+        };
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter';
+
+        function renderCharts() {
+            renderCostChart();
+            renderQualChart();
+            renderTimeChart();
+        }
+
+        function renderCostChart() {
+            const map = {};
+            filtered.forEach(d => {
+                const m = d.model ? (d.model.includes('/') ? d.model.split('/').pop() : d.model) : 'Unknown';
+                map[m] = (map[m] || 0) + Number(d.cost || 0);
+            });
+            const labels = Object.keys(map);
+            const values = Object.values(map);
+            const palette = ['#6366f1', '#38bdf8', '#10b981', '#f59e0b', '#ef4444', '#c084fc', '#fb923c', '#a78bfa'];
+            if (costChartInst) costChartInst.destroy();
+            costChartInst = new Chart(document.getElementById('costChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: values,
+                        backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+                        borderRadius: 8, barThickness: 24
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: TT },
+                    scales: {
+                        x: { grid: { color: 'rgba(30,38,55,.4)' }, ticks: { callback: v => '$' + Number(v).toFixed(4) } },
+                        y: { grid: { display: false }, ticks: { font: { weight: '600' } } }
+                    }
+                }
+            });
+        }
+
+        function renderQualChart() {
+            const bins = { 'Fresh (7-10)': 0, 'Aging (4-6)': 0, 'Poor (0-3)': 0 };
+            filtered.forEach(d => {
+                const q = Number(d.quality_rating || 0);
+                if (q >= 7) bins['Fresh (7-10)']++;
+                else if (q >= 4) bins['Aging (4-6)']++;
+                else bins['Poor (0-3)']++;
+            });
+            if (qualChartInst) qualChartInst.destroy();
+            qualChartInst = new Chart(document.getElementById('qualChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(bins),
+                    datasets: [{ data: Object.values(bins), backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 0, hoverOffset: 12 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '72%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#edf0f7', padding: 18, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+                        tooltip: TT
+                    }
+                }
+            });
+        }
+
+        function renderTimeChart() {
+            const byDate = {};
+            filtered.forEach(d => {
+                if (!d.created_timestamp) return;
+                const dKey = new Date(d.created_timestamp).toLocaleDateString();
+                if (!byDate[dKey]) byDate[dKey] = { count: 0, cost: 0 };
+                byDate[dKey].count++;
+                byDate[dKey].cost += Number(d.cost || 0);
+            });
+            const labels = Object.keys(byDate);
+            if (timeChartInst) timeChartInst.destroy();
+            timeChartInst = new Chart(document.getElementById('timeChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Scans', data: labels.map(l => byDate[l].count), borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.08)', fill: true, tension: .4, pointRadius: 4, pointBackgroundColor: '#6366f1', borderWidth: 2 },
+                        { label: 'Cost ($)', data: labels.map(l => byDate[l].cost), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.06)', fill: true, tension: .4, pointRadius: 4, pointBackgroundColor: '#38bdf8', borderWidth: 2, yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { labels: { color: '#edf0f7', padding: 14, usePointStyle: true, font: { size: 10 } } }, tooltip: TT },
+                    scales: {
+                        x: { grid: { color: 'rgba(30,38,55,.4)' } },
+                        y: { grid: { color: 'rgba(30,38,55,.3)' }, title: { display: true, text: 'Scans', color: '#94a3b8' } },
+                        y1: { position: 'right', grid: { display: false }, title: { display: true, text: 'Cost ($)', color: '#94a3b8' }, ticks: { callback: v => '$' + Number(v).toFixed(4) } }
+                    }
+                }
+            });
+        }
+
+        /* ──────────────────────────────────────────── */
+        /*  TOAST                                       */
+        /* ──────────────────────────────────────────── */
+        function toast(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.style.cssText = `border:1px solid ${type === 'error' ? 'rgba(239,68,68,.3)' : 'rgba(99,102,241,.3)'};background:${type === 'error' ? 'rgba(239,68,68,.12)' : 'rgba(99,102,241,.12)'}`;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 5000);
+        }
+
+        /* ── BOOT ── */
+        loadData();
+    </script>
+</body>
+
+</html>
